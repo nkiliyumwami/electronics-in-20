@@ -184,6 +184,77 @@ const SCENARIOS = {
     await click(page, 'Put bulb 1 back');
     await page.selectOption('select:near(:text("Bulb 1 resistance"))', '1000').catch(() => {});
   },
+  async '3.1'(page) {
+    await setRange(page, 'Input voltage (Vin)', 5);
+    await setRange(page, 'R1 (top)', logPos(1000, 100, 100000));
+    await setRange(page, 'R2 (bottom)', logPos(2000, 100, 100000));
+    const v = await page.locator('.readout:has-text("Vout") .v').innerText();
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), `5 V, 1k/2k → ${v} → done`);
+    await click(page, 'Connect the load');
+    await setRange(page, 'Load resistance', logPos(1000, 100, 1000000));
+    const v2 = await page.locator('.readout:has-text("Vout") .v').innerText();
+    expect(parseFloat(v2) < parseFloat(v), `load drags output down: ${v} → ${v2}`);
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'task refuses while loaded');
+  },
+  async '3.2'(page) {
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), `default 10k × 100µF = 1 s → not yet`);
+    await setRange(page, 'Resistor R', logPos(20000, 1000, 100000));
+    await setRange(page, 'Capacitor C', logPos(100e-6, 1e-6, 100e-6));
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), `20k × 100µF → done (${fb.slice(0, 40)})`);
+    await click(page, 'Fit electrolytic backwards');
+    await click(page, 'Charge');
+    const card = await failCard(page, 9000);
+    expect(card && /popped/.test(card), 'reversed electrolytic pops when charged');
+    await clickIn(page, '.failcard', 'Undo (new capacitor)');
+    expect(page.errors.length === 0, 'undo works');
+  },
+  async '3.3'(page) {
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'starts too dim (1 kΩ)');
+    await click(page, 'Take out the resistor');
+    const card = await failCard(page, 4000);
+    expect(card && /burned out/.test(card), 'no resistor → LED burns out');
+    await clickIn(page, '.failcard', 'Undo (new LED)');
+    await click(page, 'Use the nearest standard value');
+    const i = await page.locator('.readout:has-text("LED current") .v').innerText();
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), `calculator value gives ${i} → done`);
+    await click(page, 'Flip the LED');
+    const i2 = await page.locator('.readout:has-text("LED current") .v').innerText();
+    expect(/^0\.0 mA/.test(i2), `flipped LED blocks current (${i2})`);
+  },
+  async '3.4'(page) {
+    await click(page, 'Motor (1 A)');
+    await click(page, 'Set the pin HIGH (3.3 V)');
+    await click(page, 'Set the pin LOW (0 V)');
+    let card = await failCard(page, 3000);
+    expect(card && /Spark/.test(card), 'motor off without diode → spark');
+    await clickIn(page, '.failcard', 'Fit a flyback diode');
+    await click(page, 'Set the pin HIGH (3.3 V)');
+    await click(page, 'Set the pin LOW (0 V)');
+    const fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), 'motor off with diode → done');
+    await click(page, 'LED strip (2 A)');
+    await setRange(page, 'Gate voltage', 2.25);
+    card = await failCard(page, 9000);
+    expect(card && /cooked/.test(card), 'half-on gate cooks the MOSFET');
+    await clickIn(page, '.failcard', 'Undo (new MOSFET, gate off)');
+  },
+  async '3.5'(page) {
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'PA5 starts as input');
+    await page.selectOption('select:has(option[value="5"])', '5');
+    await click(page, 'Output (drive)');
+    await click(page, 'HIGH (3.3 V)');
+    const led = await page.locator('.readout:has-text("LED on PA5") .v').innerText();
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done') && led === 'lit', `PA5 output HIGH → LED ${led} → done`);
+    await setRange(page, 'Explode the chip', 1);
+  },
 };
 
 for (const [id, run] of Object.entries(SCENARIOS)) {

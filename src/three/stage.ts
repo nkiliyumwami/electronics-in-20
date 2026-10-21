@@ -4,6 +4,7 @@ import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { h } from '../core/dom';
 import { symbolSvg, type SymbolKey } from './symbols';
+import { isShared } from './lib';
 
 export interface PartAction {
   label: string;
@@ -558,8 +559,8 @@ export class Stage {
       const m = o as THREE.Mesh;
       if (m.geometry) m.geometry.dispose();
       const mat = m.material as THREE.Material | THREE.Material[] | undefined;
-      if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
-      else if (mat && !(mat.userData && mat.userData.shared)) mat.dispose();
+      if (Array.isArray(mat)) mat.forEach((x) => !isShared(x) && x.dispose());
+      else if (mat && !isShared(mat)) mat.dispose();
     });
     this.renderer?.renderLists.dispose();
     this.el.remove();

@@ -9,6 +9,8 @@
 import { Circuit } from '../src/sim/solver.ts';
 import { nearestE12 } from '../src/sim/physics.ts';
 
+const par = (a: number, b: number) => 1 / (1 / a + 1 / b);
+
 export interface Spec {
   answer?: number;
   choices?: Record<string, number>;
@@ -90,22 +92,107 @@ CHECKS['2.2/q1'] = { allowed: [0] };
 {
   // 2.3 q1: two 1 kΩ in parallel.
   const R = 1000;
-  const par = 1 / (1 / R + 1 / R);
+  const p2 = par(R, R);
   CHECKS['2.3/q1'] = {
-    answer: par,
+    answer: p2,
     traps: { '2000': R + R }, // added them as if in series
-    allowed: [1, par],
-    extra: [{ name: '"half of 1 kΩ is 500 Ω"', check: () => eq(R / 2, par, 'half') }],
+    allowed: [1, p2],
+    extra: [{ name: '"half of 1 kΩ is 500 Ω"', check: () => eq(R / 2, p2, 'half') }],
   };
 }
 {
   // 2.3 q2: 470 Ω + 220 Ω in series.
   const a = 470, b = 220;
-  const par = 1 / (1 / a + 1 / b);
+  const pp = par(a, b);
   CHECKS['2.3/q2'] = {
     answer: a + b,
-    traps: { '150': Math.round(par / 10) * 10 }, // parallel value ≈ 149.9 Ω, trap matches within 1%
+    traps: { '150': Math.round(pp / 10) * 10 }, // parallel value ≈ 149.9 Ω, trap matches within 1%
     allowed: [a, b, a + b],
-    extra: [{ name: 'parallel 470‖220 ≈ 150 Ω (trap matches within 1%)', check: () => (Math.abs(par - 150) / 150 < 0.01 ? true : `parallel = ${par}`) }],
+    extra: [{ name: 'parallel 470‖220 ≈ 150 Ω (trap matches within 1%)', check: () => (Math.abs(pp - 150) / 150 < 0.01 ? true : `parallel = ${pp}`) }],
   };
 }
+
+// ============================================================ Module 3
+{
+  // 3.1 q1: 10 V, R1 = 8 kΩ, R2 = 2 kΩ.
+  const Vin = 10, R1 = 8000, R2 = 2000;
+  const out = (Vin * R2) / (R1 + R2);
+  CHECKS['3.1/q1'] = {
+    answer: out,
+    traps: { '8': (Vin * R1) / (R1 + R2) }, // voltage across R1 instead
+    allowed: [Vin, 8, 2, out, 10],
+    extra: [{ name: '"a fifth of the total"', check: () => eq(R2 / (R1 + R2), 1 / 5, 'share') }],
+  };
+}
+{
+  // 3.1 q2: 10 kΩ / 10 kΩ divider with a 1 kΩ load.
+  const R = 10000, L = 1000;
+  const bottom = par(R, L);
+  const ratio = bottom / (R + bottom);
+  CHECKS['3.1/q2'] = {
+    allowed: [1, 10, Math.round(bottom)],
+    extra: [
+      { name: '"acts like about 909 Ω"', check: () => eq(Math.round(bottom), 909, 'R2‖load') },
+      { name: '"less than a tenth of the input"', check: () => (ratio < 0.1 ? true : `ratio ${ratio}`) },
+    ],
+  };
+}
+{
+  // 3.1 q3: 5 V → 3.3 V. Hint R1 = 1 kΩ, R2 = 2 kΩ.
+  const v = (5 * 2000) / 3000;
+  CHECKS['3.1/q3'] = {
+    allowed: [5, 3.3, 0.1, 1, 2, 3],
+    extra: [{ name: 'hint pair 1k/2k gives 3.3 ± 0.1 V', check: () => (Math.abs(v - 3.3) <= 0.1 ? true : `got ${v}`) }],
+  };
+}
+{
+  // 3.2 q1: 10 kΩ × 100 nF.
+  const R = 10000, C = 100e-9;
+  CHECKS['3.2/q1'] = {
+    answer: R * C,
+    traps: { '1': R * 100e-6 }, // used µ instead of n
+    allowed: [10, 100, R, C, R * C, 1, 63],
+    extra: [{ name: '"about 63% after one time constant"', check: () => eq(Math.round((1 - Math.exp(-1)) * 100), 63, '%') }],
+  };
+}
+CHECKS['3.2/q2'] = { allowed: [63] };
+CHECKS['3.2/q3'] = {
+  allowed: [2, 63, 10, 20, 100],
+  extra: [
+    { name: '20 kΩ × 100 µF = 2 s', check: () => eq(20e3 * 100e-6, 2, 'tau') },
+    { name: '100 kΩ × 20 µF = 2 s', check: () => eq(100e3 * 20e-6, 2, 'tau') },
+  ],
+};
+{
+  // 3.3 q1: 5 V, 2 V LED, 15 mA.
+  const Vs = 5, Vf = 2, I = 0.015;
+  const R = (Vs - Vf) / I;
+  const buy = nearestE12(R);
+  CHECKS['3.3/q1'] = {
+    answer: R,
+    traps: { '333.3': Math.round((Vs / I) * 10) / 10 }, // ignored the LED's voltage
+    allowed: [Vs, Vf, 15, I, R, buy, r1(((Vs - Vf) / buy) * 1000), Vs - Vf],
+    extra: [
+      { name: 'nearest standard value 220 Ω', check: () => eq(buy, 220, 'E12') },
+      { name: '"about 13.6 mA"', check: () => eq(r1(((Vs - Vf) / buy) * 1000), 13.6, 'I') },
+    ],
+  };
+}
+CHECKS['3.3/q3'] = { allowed: [10, 20, 0.015] };
+{
+  // 3.5 q1: VDD = 3.3 V, limit VDD + 0.3 V.
+  const lim = 3.3 + 0.3;
+  CHECKS['3.5/q1'] = { allowed: [3.3, 0.3, 5, lim], extra: [{ name: '3.3 + 0.3 = 3.6', check: () => eq(Math.round(lim * 10) / 10, 3.6, 'limit') }] };
+}
+// 3.5 q2: values come from the datasheet shown in the scene (DATASHEET in src/content/datasheet.ts).
+import { DATASHEET } from '../src/content/datasheet.ts';
+{
+  const abs = DATASHEET.absMax.find((r) => r.param === 'Current per I/O pin')!;
+  const rec = DATASHEET.operating.find((r) => r.param === 'Current per I/O pin')!;
+  CHECKS['3.5/q2'] = {
+    answer: abs.max * 1e-3,
+    traps: { '0.008': rec.max * 1e-3 }, // read the recommended table instead
+    allowed: [abs.max, rec.max],
+  };
+}
+CHECKS['3.5/q3'] = { allowed: [5, 3.3] };

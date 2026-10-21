@@ -39,7 +39,8 @@ export function parseSI(text: string): { value: number; unit: string } | null {
 /** All numbers in a text (as written), e.g. "5 V × 0.1 A = 0.5 W" → [5, 0.1, 0.5]. */
 function numbersIn(text: string): number[] {
   const t = text.replace(/¼/g, ' 0.25 ').replace(/½/g, ' 0.5 ');
-  return [...t.matchAll(/(?<![\w.])(\d+(?:\.\d+)?)(?![\w.]*\d)/g)].map((m) => Number(m[1]));
+  // Skip digits glued to letters ("3D", "PA5").
+  return [...t.matchAll(/(?<![\w.])(\d+(?:\.\d+)?)(?![\w.]*\d)(?![A-Za-z])/g)].map((m) => Number(m[1]));
 }
 
 const near = (a: number, b: number, rel = 0.005) => Math.abs(a - b) <= Math.abs(b) * rel + 1e-12;

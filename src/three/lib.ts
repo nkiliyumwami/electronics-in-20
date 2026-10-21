@@ -6,11 +6,16 @@ import { resistorBands, heatColor } from '../sim/physics';
 
 // ------------------------------------------------------------- materials
 const matCache = new Map<string, THREE.MeshStandardMaterial>();
+const sharedSet = new WeakSet<THREE.Material>();
+/** Shared library materials are reused across lessons and never disposed. */
+export function isShared(m: THREE.Material): boolean {
+  return sharedSet.has(m);
+}
 export function mat(key: string, make: () => THREE.MeshStandardMaterial): THREE.MeshStandardMaterial {
   let m = matCache.get(key);
   if (!m) {
     m = make();
-    m.userData.shared = true;
+    sharedSet.add(m);
     matCache.set(key, m);
   }
   return m;
@@ -29,8 +34,8 @@ export const M = {
   solder: () => mat('solder', () => std('#d5d9dc', 0.25, 1)),
   tin: () => mat('tin', () => std('#b9bec4', 0.35, 0.9)),
   fr4: () => mat('fr4', () => std('#cdbf86', 0.85)),
-  mask: () => mat('mask', () => std('#1f7a3e', 0.42, 0, { transparent: true, opacity: 0.88 })),
-  maskSolid: () => mat('maskSolid', () => std('#1f7a3e', 0.45)),
+  mask: () => mat('mask', () => std('#0f5e2f', 0.38, 0, { transparent: true, opacity: 0.9 })),
+  maskSolid: () => mat('maskSolid', () => std('#0f5e2f', 0.4)),
   silk: () => mat('silk', () => std('#fbfbf7', 0.7)),
   resistorBody: () => mat('resBody', () => std('#d8c49b', 0.55)),
   ceramic: () => mat('ceramic', () => std('#e09a3c', 0.6)),
@@ -123,7 +128,6 @@ export interface ResistorObj {
 export function resistor(ohms: number, span = 1.016): ResistorObj {
   const g = new THREE.Group();
   const bodyMat = M.resistorBody().clone();
-  bodyMat.userData.shared = false;
   const L = 0.62;
   const R = 0.105;
   const y = 0.32;
@@ -200,7 +204,7 @@ export const LED_COLORS = {
   white: { hex: '#f4f6ff', vf: 3.1 },
 };
 
-/** 5 mm LED standing on two legs spaced `span` apart along X (anode at -X). */
+/** 5 mm LED standing on two legs spaced `span` apart along X (anode, the long leg, at -X; flat cathode side at +X). */
 export function led(color: keyof typeof LED_COLORS = 'red', span = 0.254): LedObj {
   const g = new THREE.Group();
   const inner = new THREE.Group();
@@ -402,7 +406,6 @@ export interface WireObj {
 export function wire(points: THREE.Vector3[], color: WireColor = 'red', radius = 0.045, corner = 0.15): WireObj {
   let path = roundedPath(points, corner);
   let m = wireMat(color).clone();
-  m.userData.shared = false;
   const segs = () => Math.max(16, Math.round(path.getLength() * 12));
   const o = new THREE.Mesh(new THREE.TubeGeometry(path, segs(), radius, 8, false), m);
   return {
@@ -453,7 +456,6 @@ export function electrolyticCap(height = 0.9, radius = 0.32): ElectroObj {
   g.add(inner);
   const y0 = 0.12;
   const canMat = M.capBlue().clone();
-  canMat.userData.shared = false;
   const can = mesh(new THREE.CylinderGeometry(radius, radius, height, 32), canMat, [0, y0 + height / 2, 0]);
   // Stripe: a thin partial cylinder on the − side.
   const stripe = mesh(new THREE.CylinderGeometry(radius * 1.01, radius * 1.01, height * 0.98, 16, 1, true, Math.PI / 2 - 0.45, 0.9), M.capStripe(), [0, y0 + height / 2, 0]);
@@ -489,7 +491,6 @@ export function electrolyticCap(height = 0.9, radius = 0.32): ElectroObj {
 export function mosfetTO220(): { group: THREE.Group; body: THREE.Mesh; bodyMat: THREE.MeshStandardMaterial; legs: THREE.Vector3[] } {
   const g = new THREE.Group();
   const bodyMat = M.plasticBlack().clone();
-  bodyMat.userData.shared = false;
   const body = mesh(new THREE.BoxGeometry(1.0, 0.9, 0.45), bodyMat, [0, 1.05, 0]);
   const tab = mesh(new THREE.BoxGeometry(1.0, 0.65, 0.12), M.steel(), [0, 1.8, -0.17]);
   const hole = mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.14, 16), std('#1a1a1a', 0.8), [0, 1.85, -0.17], [Math.PI / 2, 0, 0]);
@@ -645,8 +646,8 @@ export function fuse(): { group: THREE.Group; setBlown(b: boolean): void } {
 }
 
 /** A simple board (green PCB) with optional thickness. */
-export function smallBoard(w: number, d: number, color = '#1f7a3e'): THREE.Mesh {
-  return mesh(new THREE.BoxGeometry(w, 0.16, d), std(color, 0.5), [0, -0.08, 0]);
+export function smallBoard(w: number, d: number, color = '#0f5e2f'): THREE.Mesh {
+  return mesh(new THREE.BoxGeometry(w, 0.16, d), std(color, 0.4), [0, -0.08, 0]);
 }
 
 /** Male header pin (for board-to-board wiring). */

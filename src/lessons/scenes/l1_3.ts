@@ -21,6 +21,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   stage.part(res.group, { name: 'Resistor, 220 Ω', job: 'Limits the current so the LED does not burn out.', symbol: 'resistor' });
   const ledObj = led('red', 0.254);
   ledObj.group.position.copy(H(7, 2).lerp(H(6, 2), 0.5));
+  ledObj.group.rotation.y = Math.PI; // anode (+, long leg) on column 7
   stage.real.add(ledObj.group);
   stage.part(ledObj.group, { name: 'LED (red)', job: 'Lights up when current flows through it the right way. Its long leg (+) is on the left.', symbol: 'led' });
   const redPts = batteryPts(b.plus, 1, H(13, 0), 0.9);

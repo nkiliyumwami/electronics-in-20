@@ -33,6 +33,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   stage.part(res.group, { name: 'Resistor, 330 Ω', job: 'Limits the current through the LED.', symbol: 'resistor' });
   const ledObj = led('red', 0.254);
   ledObj.group.position.copy(H(7, 2).lerp(H(6, 2), 0.5));
+  ledObj.group.rotation.y = Math.PI; // anode (+, long leg) on column 7
   stage.real.add(ledObj.group);
   stage.part(ledObj.group, { name: 'LED', job: 'Lights when current flows through it.', symbol: 'led' });
   const fz = b.plus.z;
