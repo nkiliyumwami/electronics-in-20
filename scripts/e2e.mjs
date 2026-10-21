@@ -128,6 +128,62 @@ const SCENARIOS = {
     fb = await checkTask(page, 3);
     expect(fb.startsWith('Done') && /13\.6 mA/.test(m), `meter in the gap reads ${m} → done`);
   },
+  async '2.1'(page) {
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'signal wire only → not yet');
+    await select(page, 'Wire from', 'aGnd');
+    await select(page, 'Wire to', 'bSig');
+    await click(page, 'Add wire');
+    await click(page, "Press A's button");
+    const card = await failCard(page);
+    expect(card && /shorted/.test(card), 'A.GND to B.SIG while pressed → short warning');
+    await clickIn(page, '.failcard', 'Undo (remove that wire)');
+    await select(page, 'Wire from', 'aGnd');
+    await select(page, 'Wire to', 'bGnd');
+    await click(page, 'Add wire');
+    await page.waitForTimeout(300);
+    const reads = await page.locator('.readout:has-text("B reads") .v').innerText();
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done') && reads === 'HIGH', `ground wire added, button pressed, B reads ${reads} → done`);
+  },
+  async '2.2'(page) {
+    await click(page, 'Bridge + to − (short)');
+    const card = await failCard(page, 4000);
+    expect(card && /fuse blew/.test(card), `bridge → fuse blows (${(card ?? '').slice(0, 80)})`);
+    await clickIn(page, '.failcard', 'Undo (remove bridge, new fuse)');
+    await click(page, 'Cut red wire');
+    let led = await page.locator('.readout:has-text("LED") .v').innerText();
+    expect(led === 'dark', 'cut red wire → LED dark');
+    await click(page, 'Reconnect red wire');
+    await click(page, 'Start the fault hunt');
+    await click(page, 'Disconnect battery');
+    // Probe each wire with continuity; find the silent one.
+    let broken = null;
+    for (const w of ['w1', 'w2', 'w3']) {
+      await select(page, 'red probe position', `${w}a`);
+      await select(page, 'black probe position', `${w}b`);
+      await page.waitForTimeout(100);
+      const m = await page.locator('.note[aria-live]').first().innerText();
+      if (/OL/.test(m)) broken = w;
+    }
+    expect(!!broken, `beeper found the open wire: ${broken}`);
+    const names = { w1: 'red wire', w2: 'yellow link wire', w3: 'black wire' };
+    await click(page, `Replace ${names[broken ?? 'w1']}`);
+    await page.waitForTimeout(200);
+    const fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), `replaced the proven wire → done (${fb.slice(0, 50)})`);
+  },
+  async '2.3'(page) {
+    await click(page, 'Take bulb 1 out');
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet') && /dark/.test(fb), 'series with one bulb out → other bulb dark');
+    await click(page, 'Parallel (side by side)');
+    fb = await checkTask(page, 3);
+    const total = await page.locator('.readout:has-text("Total resistance") .v').innerText();
+    expect(fb.startsWith('Done'), `parallel with one out → done (total ${total})`);
+    await click(page, 'Put bulb 1 back');
+    await page.selectOption('select:near(:text("Bulb 1 resistance"))', '1000').catch(() => {});
+  },
 };
 
 for (const [id, run] of Object.entries(SCENARIOS)) {

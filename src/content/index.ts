@@ -1,9 +1,10 @@
 import type { LessonContent } from './types.ts';
 import { M1 } from './m1.ts';
+import { M2 } from './m2.ts';
 
 export { MODULES } from './modules.ts';
 
-export const LESSONS: LessonContent[] = [...M1];
+export const LESSONS: LessonContent[] = [...M1, ...M2];
 
 export function lessonById(id: string): LessonContent | undefined {
   return LESSONS.find((l) => l.id === id);

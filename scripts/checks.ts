@@ -81,3 +81,31 @@ CHECKS['1.3/q2'] = { allowed: [0] };
     extra: [{ name: '"about 13.6 mA"', check: () => eq(mA, 13.6, 'meter reading') }],
   };
 }
+
+// ============================================================ Module 2
+CHECKS['2.1/q1'] = { allowed: [0] };
+CHECKS['2.1/q2'] = { allowed: [0] };
+CHECKS['2.1/q3'] = { allowed: [0] };
+CHECKS['2.2/q1'] = { allowed: [0] };
+{
+  // 2.3 q1: two 1 kΩ in parallel.
+  const R = 1000;
+  const par = 1 / (1 / R + 1 / R);
+  CHECKS['2.3/q1'] = {
+    answer: par,
+    traps: { '2000': R + R }, // added them as if in series
+    allowed: [1, par],
+    extra: [{ name: '"half of 1 kΩ is 500 Ω"', check: () => eq(R / 2, par, 'half') }],
+  };
+}
+{
+  // 2.3 q2: 470 Ω + 220 Ω in series.
+  const a = 470, b = 220;
+  const par = 1 / (1 / a + 1 / b);
+  CHECKS['2.3/q2'] = {
+    answer: a + b,
+    traps: { '150': Math.round(par / 10) * 10 }, // parallel value ≈ 149.9 Ω, trap matches within 1%
+    allowed: [a, b, a + b],
+    extra: [{ name: 'parallel 470‖220 ≈ 150 Ω (trap matches within 1%)', check: () => (Math.abs(par - 150) / 150 < 0.01 ? true : `parallel = ${par}`) }],
+  };
+}
