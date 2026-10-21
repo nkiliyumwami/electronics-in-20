@@ -7,7 +7,7 @@
 //   allowed – every number allowed to appear in the question's texts
 //   extra   – any other claim in the texts, checked as code
 import { Circuit } from '../src/sim/solver.ts';
-import { nearestE12 } from '../src/sim/physics.ts';
+import { nearestE12, traceRise, traceWidthFor } from '../src/sim/physics.ts';
 
 const par = (a: number, b: number) => 1 / (1 / a + 1 / b);
 
@@ -272,3 +272,50 @@ CHECKS['5.2/q2'] = {
 CHECKS['5.2/q3'].extra!.push({ name: 'buck at 90% wastes ~0.25 W', check: () => { const w = 2.5 * (1 / 0.9 - 1); return w > 0.2 && w < 0.32 ? true : `${w} W`; } });
 CHECKS['5.3/q1'] = { allowed: [100] };
 CHECKS['5.3/q3'] = { allowed: [0.1] };
+
+// ============================================================ Module 6
+CHECKS['6.1/q3'] = { allowed: [5] };
+{
+  const inch = 25.4;
+  CHECKS['6.2/q1'] = {
+    allowed: [805 /* the code 0805 */, 0.08, 0.05, 25.4, 2.0, 1.25, 2012, 0.8, 0.5, 2.5, 8, 5],
+    extra: [
+      { name: '0.08 in ≈ 2.0 mm', check: () => (Math.abs(0.08 * inch - 2.0) < 0.05 ? true : `${0.08 * inch}`) },
+      { name: '0.05 in ≈ 1.25 mm', check: () => (Math.abs(0.05 * inch - 1.25) < 0.03 ? true : `${0.05 * inch}`) },
+      { name: '"about 2.5 times bigger" (mm reading vs inch)', check: () => (Math.abs((0.08 * inch) / 0.8 - 2.5) < 0.1 ? true : `${(0.08 * inch) / 0.8}`) },
+    ],
+  };
+  // Explanation claim "0805 → 2.0 × 1.25 mm → metric 2012" is the same maths.
+}
+{
+  // 6.3: IPC-2221, outer layer, 1 oz copper. Scene: 3 A, slider from 0.4 mm.
+  const I = 3, start = 0.4;
+  const need = traceWidthFor(I, 20);
+  CHECKS['6.3/q2'] = {
+    allowed: [3, 20, 0.9, 1, 2221, Math.round(traceRise(start, I)), start],
+    extra: [
+      { name: '+20 °C at 3 A needs ≈ 0.9 mm', check: () => (Math.abs(need - 0.9) < 0.01 ? true : `${need} mm`) },
+      { name: 'starting 0.4 mm runs at ≈ +76 °C', check: () => eq(Math.round(traceRise(start, I)), 76, 'rise') },
+      { name: 'slider 0.2–1.6 mm puts 0.9 mm in the middle', check: () => eq((0.2 + 1.6) / 2, 0.9, 'mid') },
+    ],
+  };
+}
+import { nightlightDesign, nightlightErcPins } from '../src/content/nightlight.ts';
+import { runDrc } from '../src/sim/drc.ts';
+import { runErc } from '../src/sim/erc.ts';
+{
+  // The board used in 6.3, 6.4, Module 7 and the capstone must be clean, and each
+  // planted 6.4 problem must be caught by exactly one check.
+  const n = (o: object) => runDrc(nightlightDesign(o));
+  CHECKS['6.4/q3'] = {
+    allowed: [],
+    extra: [
+      { name: 'night-light board: DRC clean', check: () => (n({}).length === 0 ? true : n({}).map((e) => e.msg).join('; ')) },
+      { name: 'night-light board: ERC clean', check: () => (runErc(nightlightErcPins()).length === 0 ? true : 'ERC errors') },
+      { name: 'planted clearance error detected', check: () => (n({ badClearance: true }).filter((e) => e.kind === 'clearance').length === 1 ? true : 'not exactly one') },
+      { name: 'planted unrouted net detected', check: () => (n({ missing: ['LED_A'] }).filter((e) => e.kind === 'unrouted').length === 1 ? true : 'not exactly one') },
+      { name: 'planted floating input detected by ERC', check: () => (runErc(nightlightErcPins({ noR1: true })).length === 1 ? true : 'not exactly one') },
+      { name: 'power trace width set to the 6.3 answer', check: () => (nightlightDesign({}).traces.find((t) => t.id === 'P5V')!.width >= traceWidthFor(3, 20) - 0.001 ? true : 'too thin') },
+    ],
+  };
+}

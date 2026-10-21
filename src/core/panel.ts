@@ -161,7 +161,7 @@ export class Panel {
     parent: HTMLElement = this.el,
   ) {
     const id = uid('sel');
-    const sel = h('select', { id }) as HTMLSelectElement;
+    const sel = h('select', { id, 'aria-label': label }) as HTMLSelectElement;
     for (const op of options) sel.append(h('option', { value: op.value }, op.label));
     sel.value = value;
     sel.addEventListener('change', () => onChange(sel.value as T));

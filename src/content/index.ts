@@ -4,10 +4,11 @@ import { M2 } from './m2.ts';
 import { M3 } from './m3.ts';
 import { M4 } from './m4.ts';
 import { M5 } from './m5.ts';
+import { M6 } from './m6.ts';
 
 export { MODULES } from './modules.ts';
 
-export const LESSONS: LessonContent[] = [...M1, ...M2, ...M3, ...M4, ...M5];
+export const LESSONS: LessonContent[] = [...M1, ...M2, ...M3, ...M4, ...M5, ...M6];
 
 export function lessonById(id: string): LessonContent | undefined {
   return LESSONS.find((l) => l.id === id);

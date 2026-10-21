@@ -380,11 +380,12 @@ export class Stage {
       const info = o.userData.part as PartInfo;
       if (!info || seen.has(info.name)) continue;
       let hidden = false;
-      for (let p: THREE.Object3D | null = o; p && p !== this.root; p = p.parent) {
+      let p: THREE.Object3D | null = o;
+      for (; p && p !== this.root; p = p.parent) {
         // Hidden parts are skipped, except whole twins hidden by the view toggle.
         if (!p.visible && p !== this.real && p !== this.water) hidden = true;
       }
-      if (hidden) continue;
+      if (hidden || p !== this.root) continue; // hidden, or removed from the scene
       seen.add(info.name);
       out.push({ obj: o, info });
     }
@@ -461,9 +462,10 @@ export class Stage {
       let p: THREE.Object3D | null = o;
       while (p) {
         if (!p.visible) return false;
+        if (p === this.scene) return true;
         p = p.parent;
       }
-      return true;
+      return false; // not attached to the scene any more
     });
     return this.ray.intersectObjects(vis, true);
   }

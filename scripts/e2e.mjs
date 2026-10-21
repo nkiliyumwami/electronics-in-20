@@ -350,6 +350,79 @@ const SCENARIOS = {
     fb = await checkTask(page, 3);
     expect(fb.startsWith('Done'), `cap at 4 mm → dip ${dip} → done`);
   },
+  async '6.1'(page) {
+    const wire = async (a, b) => {
+      await select(page, 'Connect from pin', a);
+      await select(page, 'Connect to pin', b);
+      await click(page, 'Connect');
+    };
+    await wire('BT1.+', 'BT1.-');
+    let fb = await checkTask(page, 3);
+    expect(/short/i.test(fb), 'battery + to − flagged as a short');
+    await page.locator('.panel').getByRole('button', { name: /Remove wire BT1/ }).first().click();
+    const goal = [['BT1.+', 'SW1.1'], ['SW1.1', 'R2.1'], ['SW1.2', 'R1.1'], ['R1.1', 'Q1.G'], ['R2.2', 'D1.A'], ['D1.K', 'Q1.D'], ['Q1.S', 'R1.2'], ['R1.2', 'BT1.-']];
+    for (const [a, b] of goal) await wire(a, b);
+    const n = await page.locator('.readout:has-text("Goal nets") .v').innerText();
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), `all nets (${n}) → done`);
+    await click(page, 'Press SW1 (simulate)');
+    const sim = await page.locator('.readout:has-text("Simulation") .v').innerText();
+    expect(/LED on/.test(sim), `button press lights the LED (${sim})`);
+  },
+  async '6.2'(page) {
+    const place = async (part, fp) => {
+      await select(page, 'Part', part);
+      await select(page, 'Footprint', fp);
+      await click(page, 'Place it');
+      await page.waitForTimeout(150);
+    };
+    await place('R', 'm0603');
+    const card = await failCard(page, 2000);
+    expect(card && /imperial 0201/.test(card), 'metric/imperial trap explained');
+    await page.waitForTimeout(1800);
+    await place('J', 'tht254');
+    const card2 = await failCard(page, 2000);
+    expect(card2 && /2\.0 mm/.test(card2), 'JST pitch mismatch explained');
+    await page.waitForTimeout(1800);
+    for (const [p, f] of [['R', 'r0805'], ['Q', 'sot23'], ['LED', 'tht254'], ['J', 'jstph']]) await place(p, f);
+    const fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), 'all four parts on their footprints → done');
+  },
+  async '6.3'(page) {
+    let fb = await checkTask(page, 2);
+    expect(fb.startsWith('Not yet') && /\+76/.test(fb), `starts at 0.4 mm, +76 °C → not yet (${fb.slice(0, 60)})`);
+    await setRange(page, 'Power trace width (3 A)', 0.9);
+    const r = await page.locator('.readout:has-text("Temperature rise") .v').innerText();
+    fb = await checkTask(page, 2);
+    expect(fb.startsWith('Done') && r === '+20 °C', `0.9 mm → ${r} → done`);
+    await setRange(page, 'Power trace width (3 A)', 0.2);
+    const card = await failCard(page, 9000);
+    expect(card && /burned/.test(card), '0.2 mm at 3 A → trace burns');
+    await clickIn(page, '.failcard', 'Undo (new board, 0.9 mm trace)');
+    await click(page, 'Cut a slot in the ground plane');
+    const ret = await page.locator('.readout:has-text("Return current") .v').innerText();
+    expect(/detours/.test(ret), 'slot → return current detours');
+    await click(page, 'Show me the via');
+  },
+  async '6.4'(page) {
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'four problems → not yet');
+    await click(page, 'Run DRC (layout)');
+    await click(page, 'Run ERC (schematic)');
+    const d = await page.locator('.readout:has-text("DRC errors") .v').innerText();
+    const e = await page.locator('.readout:has-text("ERC errors") .v').innerText();
+    expect(d === '3' && e === '1', `DRC finds ${d}, ERC finds ${e}`);
+    for (const label of ['Re-route the IND trace away from the via', 'Route the LED_A connection', 'Snap C1 onto its pads', 'Add the 10 kΩ pull-up (R1) to the schematic']) {
+      await page.locator('.panel').getByRole('button', { name: label }).first().click();
+    }
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet') && /again/.test(fb), 'fixed but not re-run → asks to re-run');
+    await click(page, 'Run DRC (layout)');
+    await click(page, 'Run ERC (schematic)');
+    fb = await checkTask(page, 3);
+    const d2 = await page.locator('.readout:has-text("DRC errors") .v').innerText();
+    expect(fb.startsWith('Done') && d2 === '0', 'clean re-run → done');
+  },
 };
 
 for (const [id, run] of Object.entries(SCENARIOS)) {
