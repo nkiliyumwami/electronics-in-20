@@ -423,6 +423,57 @@ const SCENARIOS = {
     const d2 = await page.locator('.readout:has-text("DRC errors") .v').innerText();
     expect(fb.startsWith('Done') && d2 === '0', 'clean re-run → done');
   },
+  async '7.1'(page) {
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'vague BOM line → not yet');
+    await select(page, 'C1 manufacturer part number', 'CL10B104KB8NNNC');
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet') && /0603/.test(fb), 'right value, wrong package → explained');
+    await select(page, 'C1 manufacturer part number', 'CL21B104KBCNNNC');
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), 'exact 0805 part → done');
+    for (let i = 0; i < 7; i++) await click(page, 'Next step →');
+    const step = await page.locator('.readout:has-text("Step") .v').innerText();
+    expect(/Cut out/.test(step), `stepped through the factory (${step})`);
+  },
+  async '7.2'(page) {
+    await click(page, 'Uneven on C1');
+    await click(page, 'Run the whole line');
+    const r1 = await waitReadout(page, 'Result', /tombstone|flat/, 60000);
+    expect(r1 && /tombstone/.test(r1), `uneven paste → ${r1}`);
+    await clickIn(page, '.failcard', 'Start over');
+    await click(page, 'Even on both pads');
+    await click(page, 'Run the whole line');
+    const r2 = await waitReadout(page, 'Result', /tombstone|flat/, 60000);
+    const fb = await checkTask(page, 3);
+    expect(r2 && /flat/.test(r2) && fb.startsWith('Done'), `even paste → ${r2} → done`);
+  },
+  async '7.3'(page) {
+    await click(page, 'Output ON');
+    let card = await failCard(page, 6000);
+    expect(card && /burned/.test(card), 'full power into the short at 3 A → burns');
+    await clickIn(page, '.failcard', 'Undo (fresh board, output off)');
+    await setRange(page, 'Current limit', logPos(0.1, 0.01, 3));
+    await click(page, 'Output ON');
+    card = await failCard(page, 4000);
+    expect(card && /saved the board/.test(card), '100 mA limit → supply reports CC, nothing burns');
+    await click(page, 'Output OFF');
+    await click(page, '1. Inspect with a magnifier');
+    await click(page, 'Ohms (Ω)');
+    await select(page, 'red probe position', 'tp5');
+    await select(page, 'black probe position', 'tpg');
+    await page.waitForTimeout(300);
+    const m = await page.locator('.note[aria-live]').filter({ hasText: 'Meter:' }).first().innerText();
+    expect(/0\.0\d Ω/.test(m), `meter shows the short: ${m}`);
+    await click(page, 'Remove the solder bridge');
+    await click(page, 'Volts (V)');
+    await click(page, 'Output ON');
+    await page.waitForTimeout(500);
+    const fb = await checkTask(page, 3);
+    const v = await page.locator('.readout:has-text("Supply shows V") .v').innerText();
+    expect(fb.startsWith('Done'), `bridge removed, 100 mA limit, rail ${v} → done`);
+    await click(page, 'Press SW1 (test the signal)');
+  },
 };
 
 for (const [id, run] of Object.entries(SCENARIOS)) {

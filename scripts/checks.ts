@@ -319,3 +319,8 @@ import { runErc } from '../src/sim/erc.ts';
     ],
   };
 }
+
+// ============================================================ Module 7
+CHECKS['7.1/q2'] = { allowed: [100] };
+CHECKS['7.3/q2'] = { allowed: [50, 0.1] };
+CHECKS['7.3/q3'] = { allowed: [5, 100] };

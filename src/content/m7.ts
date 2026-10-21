@@ -1,0 +1,148 @@
+import type { LessonContent } from './types.ts';
+
+export const M7: LessonContent[] = [
+  {
+    id: '7.1',
+    module: 7,
+    title: 'Fabrication files, BOM, and how boards are made',
+    minutes: 7,
+    water: false,
+    prompt: 'Step through the factory and watch which file drives each step. Then fix the parts list so it can be ordered.',
+    explanation: [
+      'A board factory never opens your design tool. You send a zip of standard files: **Gerber files**, one per layer (each copper layer, solder mask, silkscreen and the board outline), plus a **drill file** listing every hole.',
+      'The factory starts with fibreglass covered in copper on both sides. It drills the holes and plates them with copper, which turns holes into vias. Then it prints your trace pattern and etches away all the copper that is not part of it. Solder mask, silkscreen and a thin protective finish on the pads come last.',
+      'For assembly you also send a **BOM** (bill of materials: every part, with its exact manufacturer part number) and a **pick-and-place file** saying where each part goes. A missing or vague part number is the most common reason orders get stuck.',
+    ],
+    takeaway: 'Gerbers and a drill file make the bare board. A BOM and a placement file get it assembled. Every BOM line needs an exact part number.',
+    skills: ['Prepare a complete order package (Gerbers, drill file, BOM)'],
+    questions: [
+      {
+        kind: 'mc',
+        id: 'q1',
+        prompt: 'Which file tells the factory where to drill the holes?',
+        hint: 'Step through the factory: which file is shown at the drilling step?',
+        choices: [
+          { text: 'The drill file', correct: true, why: 'Drill files (often in "Excellon" format) list every hole\'s position and size.' },
+          { text: 'The top copper Gerber', why: 'Gerbers describe the flat pattern on each layer, like copper and mask. Holes have their own file.' },
+          { text: 'The BOM', why: 'The BOM lists the parts to buy and fit. It says nothing about the bare board.' },
+        ],
+      },
+      {
+        kind: 'mc',
+        id: 'q2',
+        prompt: 'Your assembled-board order is stuck at the factory. What is the most likely cause?',
+        hint: 'Look at the BOM below the scene.',
+        choices: [
+          { text: 'A BOM line without an exact manufacturer part number', correct: true, why: '"100 nF capacitor" could be a thousand different parts. The factory has to stop and ask.' },
+          { text: 'The silkscreen text is too small', why: 'At worst it prints a bit blurry, or you get a warning. It rarely stops an order.' },
+          { text: 'The board is green', why: 'Green is the default solder-mask colour. Any colour is fine.' },
+        ],
+      },
+      {
+        kind: 'task',
+        id: 'q3',
+        task: 'fixBom',
+        prompt: 'Fix the BOM so the factory can source every part.',
+        hint: 'One line has a vague description instead of a part number. Pick the exact part that matches its value **and** its footprint.',
+        explain: 'Every line now names one exact part, in the right package. This order can go through without questions.',
+      },
+    ],
+  },
+  {
+    id: '7.2',
+    module: 7,
+    title: 'Assembly and reflow',
+    minutes: 6,
+    water: false,
+    prompt: 'Run the assembly line step by step. Then make the paste uneven and watch a part stand on its end.',
+    explanation: [
+      'Most boards are assembled by machines, and the process is the same everywhere.',
+      'First a thin steel **stencil** with holes over each pad is laid on the board, and a blade wipes **solder paste** (tiny solder balls in sticky flux) through it. A **pick-and-place** machine then sets each part onto its paste, slightly imperfectly. Finally the board rides through a **reflow oven** that follows a temperature profile: warm up, soak, a short peak around 240 °C to melt the solder, then cool.',
+      'Molten solder has strong surface tension. It pulls each part onto the centre of its pads, so slightly crooked parts **self-align**. But if one pad gets much more paste than the other, the solder on that side can pull the part upright: a **tombstone**.',
+    ],
+    takeaway: 'Stencil, paste, pick-and-place, reflow. Molten solder pulls parts straight, and uneven paste can stand them on end.',
+    skills: ['Explain how parts are soldered by machine, and why the paste matters'],
+    questions: [
+      {
+        kind: 'mc',
+        id: 'q1',
+        prompt: 'Why do slightly crooked parts end up straight after reflow?',
+        hint: 'Watch the parts at the moment the solder melts.',
+        choices: [
+          { text: "Molten solder's surface tension pulls them onto the centre of their pads", correct: true, why: 'Liquid solder wants the smallest surface, so it drags the part until it sits evenly on both pads.' },
+          { text: "The oven's fans blow them straight", why: 'The airflow is gentle, and if anything it would knock parts out of place. The solder does the aligning.' },
+          { text: 'The pick-and-place machine comes back to fix them', why: 'Once the board enters the oven, nobody touches it. The molten solder does the work.' },
+        ],
+      },
+      {
+        kind: 'mc',
+        id: 'q2',
+        prompt: 'What causes tombstoning?',
+        hint: 'Try the uneven paste setting.',
+        choices: [
+          { text: "Uneven solder paste or heating, so one end's solder pulls harder", correct: true, why: 'The side that melts first, or has more solder, wins the tug of war and lifts the other end.' },
+          { text: 'Too much solder mask', why: 'Solder mask sits between the pads, not on them. The cause is unbalanced solder.' },
+          { text: 'Using an LED instead of a resistor', why: 'Any small two-pad part can tombstone. It is about the solder, not the type of part.' },
+        ],
+      },
+      {
+        kind: 'task',
+        id: 'q3',
+        task: 'noTombstone',
+        prompt: 'Run the full line with even paste, so every part solders flat with **no tombstones**.',
+        hint: 'Choose even paste, then press "Run the whole line" (or step through it) and let the reflow finish.',
+        explain: 'Even paste on both pads means a fair tug of war: the part settles flat and centred.',
+      },
+    ],
+  },
+  {
+    id: '7.3',
+    module: 7,
+    title: 'First power-on (bring-up)',
+    minutes: 7,
+    water: false,
+    prompt: 'This brand-new board hides a short. Set the bench supply\'s current limit before you switch on, or see what happens.',
+    explanation: [
+      'A brand-new board is guilty until proven innocent. Switch it on carelessly and a single solder bridge can cook a part in a second. Professionals follow the same order every time:',
+      '1. **Inspect**: look for bridges and missing or rotated parts.',
+      '2. **Check for shorts**: with the power off, measure the resistance between the supply rail and ground. It should not be near 0 Ω.',
+      '3. **Power up with a current limit**: set the supply\'s limit just above what the board should draw, say 50 mA. A short then makes the supply report the fault instead of burning anything.',
+      '4. **Check the rails**: measure each supply voltage.',
+      '5. **Check the signals**: test each function one by one.',
+    ],
+    takeaway: 'Inspect, check for shorts, power up with a current limit, check the rails, then the signals. The current limit turns disasters into clues.',
+    skills: ['Bring up a new board safely with a current limit'],
+    questions: [
+      {
+        kind: 'mc',
+        id: 'q1',
+        prompt: 'What is the very first thing to do with a freshly assembled board?',
+        hint: 'Your eyes are the cheapest test equipment.',
+        choices: [
+          { text: 'Inspect it closely for solder bridges and missing or rotated parts', correct: true, why: 'Many faults are visible, and looking costs nothing and risks nothing.' },
+          { text: 'Plug it into full power to see if it works', why: 'If there is a short, full power can burn a part or a trace before you can react.' },
+          { text: 'Measure the rail voltages', why: 'That needs power. Look first, and check for shorts second.' },
+        ],
+      },
+      {
+        kind: 'mc',
+        id: 'q2',
+        prompt: 'You switch on with a 50 mA limit. The supply jumps into current limit and the voltage drops to 0.1 V. What does that tell you?',
+        hint: 'What kind of path takes all the current while the voltage collapses?',
+        choices: [
+          { text: 'There is a short: the board is drawing every milliamp it is allowed', correct: true, why: 'The supply is protecting the board and telling you there is a low-resistance path. Time to find it with the meter.' },
+          { text: 'The board is working normally', why: 'A working board would sit at the set voltage, drawing its normal current.' },
+          { text: 'The supply is broken', why: 'It is doing exactly its job: limiting the current and telling you about it.' },
+        ],
+      },
+      {
+        kind: 'task',
+        id: 'q3',
+        task: 'bringUp',
+        prompt: 'Bring the board up safely: find and remove the short, then power it **with a current limit** until the rail reads 5 V.',
+        hint: 'Inspect, then use the meter on ohms between the +5V and GND test points. Remove the bridge, set the limit to 100 mA or less, and switch on.',
+        explain: 'The rail sits at 5 V and the board draws only its normal few milliamps. That is a successful bring-up.',
+      },
+    ],
+  },
+];
