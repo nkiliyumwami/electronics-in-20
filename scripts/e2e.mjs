@@ -18,7 +18,7 @@ async function open(id) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(`${base}#/lesson/${id}`);
+  await page.goto(id === 'capstone' ? `${base}#/capstone` : `${base}#/lesson/${id}`);
   await page.waitForSelector('.panel .ctl, .panel .btn', { timeout: 15000 });
   await page.waitForTimeout(600);
   page.errors = errors;
@@ -473,6 +473,57 @@ const SCENARIOS = {
     const v = await page.locator('.readout:has-text("Supply shows V") .v').innerText();
     expect(fb.startsWith('Done'), `bridge removed, 100 mA limit, rail ${v} → done`);
     await click(page, 'Press SW1 (test the signal)');
+  },
+  async capstone(page) {
+    const btn = (name) => page.getByRole('button', { name, exact: true }).first().click();
+    for (let i = 0; i < 7; i++) await btn('Show me one net');
+    await btn('Check my schematic');
+    await btn('Next: Footprints →');
+    const fps = { U1: 'SOIC-8', Q1: 'SOT-23', C1: '0805', R1: '0805', R2: '0805', D1: '0805', SW1: 'SMD 6x6', J1: 'JST-PH 2.0 mm', J2: 'JST-PH 2.0 mm' };
+    for (const [r, f] of Object.entries(fps)) await page.selectOption(`select[aria-label="Footprint for ${r}"]`, f);
+    await btn('Check footprints');
+    let note = await page.locator('.panel .note').first().innerText();
+    expect(/J2/.test(note), `J2 on a 2 A connector is rejected (${note.slice(0, 60)})`);
+    await page.selectOption('select[aria-label="Footprint for J2"]', 'JST-XH 2.5 mm');
+    await btn('Check footprints');
+    await btn('Next: Placement →');
+    await btn('Next to the battery connector J1');
+    await btn('Place all parts');
+    note = await page.locator('.panel .note').first().innerText();
+    expect(/VCC/.test(note), 'C1 far from U1 is rejected');
+    await btn("Right at U1's VCC pin");
+    await btn('Place all parts');
+    await btn('Next: Routing →');
+    await page.selectOption('select[aria-label="Power trace width"]', '0.5');
+    await btn('Route the board');
+    await btn('Next: Checks →');
+    await btn('Run DRC + ERC + current check');
+    const out = await page.locator('.panel [aria-live]').first().innerText();
+    expect(/\+52 °C/.test(out), `0.5 mm power trace fails the current check (${out.slice(0, 90)})`);
+    await btn('← Back to routing');
+    await page.selectOption('select[aria-label="Power trace width"]', '0.9');
+    await btn('Route the board');
+    await btn('Next: Checks →');
+    await btn('Run DRC + ERC + current check');
+    const ok = await page.locator('.panel [aria-live]').first().innerText();
+    expect(/0 errors/.test(ok), `0.9 mm: ${ok}`);
+    await btn('Next: 3D view →');
+    await setRange(page, 'Explode the board', 1);
+    await btn('Looks good →');
+    await btn('Next: Power-up →');
+    await setRange(page, 'Current limit', logPos(0.1, 0.01, 4));
+    await btn('Output ON');
+    await btn('Connect the LED strip');
+    await setRange(page, 'Current limit', 1000);
+    await btn('Press SW1');
+    const stt = await waitReadout(page, 'Status', /strip on/, 5000);
+    expect(!!stt, `safe first power-up, then strip at full current: ${stt}`);
+    await btn('Next: Certificate →');
+    await page.fill('input[aria-label="Your name"]', 'Test Learner');
+    const href = await page.locator('a[download]').getAttribute('href');
+    expect(href && href.startsWith('data:image/png'), 'certificate PNG ready to download');
+    const navDone = await page.locator('.steps .st.done').count();
+    expect(navDone === 8, `all 8 capstone steps ticked (${navDone})`);
   },
 };
 

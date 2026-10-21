@@ -220,9 +220,19 @@ export class SchematicEditor {
         path('M-40 -50H40V50H-40Z');
         break;
     }
-    // Labels (not rotated).
-    const lx = p.vertical ? p.x + 18 : p.x - 22;
-    const ly = p.vertical ? p.y - 4 : p.y - 22;
+    // Labels (not rotated), placed clear of each symbol's outline.
+    let lx = p.vertical ? p.x + 16 : p.x - 22;
+    let ly = p.vertical ? p.y - 4 : p.y - 30;
+    if (p.sym === 'chip') {
+      lx = p.x - 40;
+      ly = p.y - 72;
+    } else if (p.sym === 'connector') {
+      lx = p.x - 14;
+      ly = p.y - 46;
+    } else if (p.sym === 'mosfet') {
+      lx = p.x + 22;
+      ly = p.y - 2;
+    }
     const t = el('text', { x: lx, y: ly, 'font-size': 13, 'font-weight': 700, stroke: 'none', fill: 'currentColor' });
     t.textContent = p.ref;
     const v = el('text', { x: lx, y: ly + 15, 'font-size': 11, stroke: 'none', fill: 'currentColor', opacity: 0.75 });
