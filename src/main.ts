@@ -247,6 +247,7 @@ async function lessonPage(id: string) {
       return;
     }
     handle = mod.default({ stage, panel, fx, fxWater, lesson, fail, clearFail });
+    stage.renderFallback();
     stage.startFallbackLoop();
   }
   renderParts();

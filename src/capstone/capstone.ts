@@ -201,6 +201,9 @@ export async function capstonePage(main: HTMLElement): Promise<() => void> {
     renderNav();
     showBoard();
     ({ schematic: stepSchematic, footprints: stepFootprints, place: stepPlace, route: stepRoute, drc: stepDrc, view: stepView, power: stepPower, cert: stepCert })[k]();
+    // Without WebGL: show the parts diagram and keep the simulation ticking.
+    stage.renderFallback();
+    stage.startFallbackLoop();
   }
 
   // 1. Schematic

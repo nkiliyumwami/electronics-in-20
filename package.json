@@ -13,7 +13,8 @@
     "test:solver": "node scripts/solver-test.ts",
     "e2e": "npm run build && node scripts/e2e.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "check": "npm run typecheck && npm run test:solver && npm run verify"
+    "check": "npm run typecheck && npm run test:solver && npm run verify",
+    "docs": "node scripts/export-course.ts"
   },
   "dependencies": {
     "three": "0.170.0"

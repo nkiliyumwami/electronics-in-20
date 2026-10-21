@@ -41,9 +41,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
     job: 'A voltage-controlled switch. Gate (left leg) controls the big current from drain (middle) to source (right).',
     symbol: 'mosfet',
   });
-  stage.label('G', q.group, new THREE.Vector3(-0.254, -0.05, 0.25));
-  stage.label('D', q.group, new THREE.Vector3(0, -0.05, 0.25));
-  stage.label('S', q.group, new THREE.Vector3(0.254, -0.05, 0.25));
+  stage.label('G · D · S', q.group, new THREE.Vector3(0, -0.15, 0.35));
   const tLabel = stage.label('', q.group, new THREE.Vector3(0, 2.4, 0), 'big');
 
   // Microcontroller board on the left.

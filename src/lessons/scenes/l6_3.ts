@@ -37,7 +37,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   // A thinner, see-through mask here, so the trace's heat colours show through.
   const maskMesh = L.maskTop.children[0] as THREE.Mesh;
   const thinMask = (maskMesh.material as THREE.MeshStandardMaterial).clone();
-  thinMask.opacity = 0.55;
+  thinMask.opacity = 0.7;
   maskMesh.material = thinMask;
   for (const k of Object.keys(L) as LayerName[]) stage.part(L[k], { name: LAYER_INFO[k].name, job: LAYER_INFO[k].job, symbol: k === 'cuBot' ? 'plane' : k === 'core' ? 'pcb' : k.startsWith('cu') ? 'trace' : 'pcb' });
   for (const [ref, obj] of Object.entries(nl.parts)) stage.part(obj, { name: PART_INFO[ref].name, job: PART_INFO[ref].job, symbol: PART_INFO[ref].symbol });

@@ -18,7 +18,9 @@ async function open(id) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(id === 'capstone' ? `${base}#/capstone` : `${base}#/lesson/${id}`);
+  // QUERY=nowebgl runs every scenario on the 2D fallback.
+  const q = process.env.QUERY ? `?${process.env.QUERY}` : '';
+  await page.goto(id === 'capstone' ? `${base}${q}#/capstone` : `${base}${q}#/lesson/${id === 'progress' ? '1.1' : id}`);
   await page.waitForSelector('.panel .ctl, .panel .btn', { timeout: 15000 });
   await page.waitForTimeout(600);
   page.errors = errors;
@@ -283,17 +285,13 @@ const SCENARIOS = {
     await click(page, 'Pull-up resistor (10 kΩ)');
     await click(page, 'Reset counter');
     await click(page, 'Press the button once');
-    await page.waitForTimeout(600);
-    await waitReadout(page, 'Contact', /open/);
-    await page.waitForTimeout(3500);
+    await page.waitForTimeout(5000); // one slow-motion press lasts about 3 s
     const bounced = await page.locator('.readout:has-text("Presses counted") .v').innerText();
     expect(Number(bounced) > 1, `pull-up but no debounce: one press counted ${bounced} times`);
     await click(page, 'Software debounce (20 ms)');
     await click(page, 'Reset counter');
     await click(page, 'Press the button once');
-    await page.waitForTimeout(600);
-    await waitReadout(page, 'Contact', /open/);
-    await page.waitForTimeout(3500);
+    await page.waitForTimeout(5000);
     const one = await page.locator('.readout:has-text("Presses counted") .v').innerText();
     const fb = await checkTask(page, 3);
     expect(fb.startsWith("Done") && one === "1", `pull-up + debounce: counted ${one} → done (${fb.slice(0, 140)})`);
@@ -524,6 +522,26 @@ const SCENARIOS = {
     expect(href && href.startsWith('data:image/png'), 'certificate PNG ready to download');
     const navDone = await page.locator('.steps .st.done').count();
     expect(navDone === 8, `all 8 capstone steps ticked (${navDone})`);
+  },
+  async progress(page) {
+    // Fresh lesson: Next is locked until all three questions are attempted.
+    const next = page.locator('nav .btn.primary');
+    expect((await next.getAttribute('aria-disabled')) === 'true', 'Next starts locked');
+    await page.locator('.q').nth(0).getByRole('button', { name: /second point/ }).click();
+    await page.locator('.q').nth(1).getByRole('button', { name: 'Current', exact: true }).click();
+    const fb = await page.locator('.q').nth(1).locator('.fb').innerText();
+    expect(/Hint/.test(fb), 'wrong answer shows a hint, no penalty');
+    await page.locator('.q').nth(1).getByRole('button', { name: 'Voltage', exact: true }).click();
+    await checkTask(page, 3);
+    expect((await next.getAttribute('aria-disabled')) === 'false', 'Next unlocks after all three attempts');
+    await page.goto(page.url().replace(/#.*$/, '#/'));
+    await page.waitForTimeout(800);
+    const ticks = await page.locator('.lesson-link .tick.done').count();
+    const skills = await page.locator('.cando p.note').innerText();
+    expect(ticks === 1 && /2 of \d+ skills/.test(skills), `course map: ${ticks} lesson done, ${skills}`);
+    await page.reload();
+    await page.waitForTimeout(800);
+    expect((await page.locator('.lesson-link .tick.done').count()) === 1, 'progress survives a reload (localStorage)');
   },
 };
 

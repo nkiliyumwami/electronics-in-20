@@ -161,10 +161,23 @@ export class Stage {
     return () => this.updaters.delete(fn);
   }
 
+  /** No-WebGL fallback: a static diagram of the scene's parts (symbol + name). */
+  renderFallback() {
+    if (!this.fallback) return;
+    const fb = this.el.querySelector('.fallback');
+    if (!fb) return;
+    fb.querySelector('.fb-grid')?.remove();
+    const grid = h('div', { class: 'fb-grid', role: 'img', 'aria-label': 'Diagram of the parts in this scene' });
+    for (const p of this.listParts()) {
+      grid.append(h('div', { class: 'fb-part' }, h('div', { class: 'tt-sym', html: symbolSvg(p.info.symbol), 'aria-hidden': 'true' }), h('span', null, p.info.name)));
+    }
+    fb.prepend(grid);
+  }
+
   /** Run updaters without rendering (used by the no-WebGL fallback). */
   private fallbackTimer = 0;
   startFallbackLoop() {
-    if (!this.fallback) return;
+    if (!this.fallback || this.fallbackTimer) return;
     let last = performance.now();
     const loop = () => {
       if (this.disposed) return;

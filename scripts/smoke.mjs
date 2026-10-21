@@ -23,7 +23,7 @@ const browser = await chromium.launch({
 });
 let failures = 0;
 for (const r of routes) {
-  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1, colorScheme: process.env.DARK ? 'dark' : 'light' });
   const errors = [];
   page.on('console', (m) => {
     if (m.type() === 'error' || m.type() === 'warning') errors.push(`[${m.type()}] ${m.text()}`);
@@ -33,7 +33,8 @@ for (const r of routes) {
     if (res.status() >= 400) errors.push(`[http ${res.status()}] ${res.url()}`);
   });
   const t0 = Date.now();
-  await page.goto(base.endsWith('.html') ? `${base}#${r}` : `${base}/#${r}`, { waitUntil: 'load' });
+  const q = process.env.QUERY ? `?${process.env.QUERY}` : '';
+  await page.goto(base.endsWith('.html') ? `${base}${q}#${r}` : `${base}/${q}#${r}`, { waitUntil: 'load' });
   await page.waitForTimeout(wait);
   if (actions) {
     try {
@@ -56,7 +57,7 @@ for (const r of routes) {
         requestAnimationFrame(f);
       }),
   );
-  const name = `${r.replace(/[^\w.]+/g, '_') || 'home'}_${width}`;
+  const name = `${r.replace(/[^\w.]+/g, '_') || 'home'}_${width}${process.env.DARK ? '_dark' : ''}${process.env.QUERY ? '_' + process.env.QUERY : ''}`;
   const shot = `scripts/shots/${name}.png`;
   await page.screenshot({ path: shot, fullPage: process.env.FULL === '1' });
   const scrollW = await page.evaluate(() => document.documentElement.scrollWidth);
