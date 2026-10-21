@@ -314,6 +314,42 @@ const SCENARIOS = {
     fb = await checkTask(page, 3);
     expect(fb.startsWith('Done') && /Temp sensor answered/.test(log), 'I2C to 0x48 → answered → done');
   },
+  async '5.1'(page) {
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'default budget lasts under a week');
+    await click(page, 'Status LED on (20 mA)');
+    await click(page, 'Burst once a minute');
+    await click(page, 'Sleep (0.05 mA)');
+    const life = await page.locator('.readout:has-text("Estimated life") .v').innerText();
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), `lean setup → ${life} → done`);
+    const peak = await page.locator('.readout:has-text("Peak current") .v').innerText();
+    expect(/801 mA/.test(peak), `peak still includes the 800 mA burst (${peak})`);
+  },
+  async '5.2'(page) {
+    const card = await failCard(page, 9000);
+    expect(card && /Thermal shutdown/.test(card), 'LDO at 12 V / 500 mA → thermal shutdown');
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'LDO setup fails the task');
+    await clickIn(page, '.failcard', 'Switch to the buck regulator');
+    await page.waitForTimeout(500);
+    fb = await checkTask(page, 3);
+    const heat = await page.locator('.readout:has-text("Heat in regulator") .v').innerText();
+    expect(fb.startsWith('Done'), `buck regulator, heat ${heat} → done`);
+  },
+  async '5.3'(page) {
+    await page.waitForTimeout(1500);
+    const r = await page.locator('.readout:has-text("Chip resets") .v').innerText();
+    expect(Number(r) > 0, `no cap → chip resets (${r})`);
+    await click(page, 'Fit the 100 nF capacitor');
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'cap 40 mm away → not yet');
+    await setRange(page, 'Capacitor distance from the power pin', 4);
+    await page.waitForTimeout(300);
+    const dip = await page.locator('.readout:has-text("Dip during") .v').innerText();
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), `cap at 4 mm → dip ${dip} → done`);
+  },
 };
 
 for (const [id, run] of Object.entries(SCENARIOS)) {

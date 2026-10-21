@@ -225,3 +225,50 @@ CHECKS['3.5/q3'] = { allowed: [5, 3.3] };
   };
   CHECKS['4.2/q3'] = { allowed: [] };
 }
+
+// ============================================================ Module 5
+// Scene constants for 5.1 (src/lessons/scenes/l5_1.ts uses the same numbers).
+export const BUDGET = { capacity: 2000, mcuActive: 10, mcuSleep: 0.05, led: 20, radioListen: 15, radioBurst: 800, burstMs: 10, burstEveryS: 60, sensor: 1 };
+{
+  const cap = 2000, I = 25;
+  CHECKS['5.1/q1'] = {
+    answer: cap / I,
+    traps: { '50000': cap * I }, // multiplied instead of dividing
+    allowed: [I, cap, cap / I, 3],
+    extra: [
+      { name: '"a little over 3 days"', check: () => (cap / I / 24 > 3 && cap / I / 24 < 3.5 ? true : `${cap / I / 24} days`) },
+      { name: 'explanation: 2000 mAh = 20 mA × 100 h = 200 mA × 10 h', check: () => (cap / 20 === 100 && cap / 200 === 10 ? true : 'mismatch') },
+    ],
+  };
+}
+CHECKS['5.1/q2'] = { allowed: [20, 800, 410], extra: [{ name: '410 is halfway between 20 and 800', check: () => eq((20 + 800) / 2, 410, 'halfway') }] };
+{
+  const B = BUDGET;
+  const limit = B.capacity / 168;
+  const lean = B.mcuSleep + (B.radioBurst * B.burstMs) / 1000 / B.burstEveryS + B.sensor; // LED off, radio bursts, MCU sleeping
+  CHECKS['5.1/q3'] = {
+    allowed: [2000, 168, r1(limit)],
+    extra: [
+      { name: '2000 ÷ 168 ≈ 11.9 mA', check: () => eq(r1(limit), 11.9, 'limit') },
+      { name: 'the lean setup really beats a week', check: () => (B.capacity / lean > 168 ? true : `only ${B.capacity / lean} h`) },
+      { name: 'the default setup does not', check: () => (B.capacity / (B.mcuActive + B.led + B.radioListen + B.sensor) < 168 ? true : 'default already passes') },
+    ],
+  };
+}
+{
+  const Vin = 12, Vout = 5, I = 0.5;
+  CHECKS['5.2/q1'] = {
+    answer: (Vin - Vout) * I,
+    traps: { '6': Vin * I, '2.5': Vout * I }, // total input power; load power
+    allowed: [Vin, Vout, 500, I, (Vin - Vout) * I, Vin - Vout, Vout * I, Vin * I],
+  };
+  CHECKS['5.2/q3'] = { allowed: [5, 500, 12, 100, 3.5], extra: [{ name: 'LDO at 12 V burns 3.5 W', check: () => eq((Vin - Vout) * I, 3.5, 'heat') }] };
+}
+CHECKS['5.2/q2'] = {
+  allowed: [5],
+  extra: [{ name: 'explanation: LDO at 12→5 V, 0.5 A wastes more than the load uses', check: () => ((12 - 5) * 0.5 > 5 * 0.5 ? true : 'not more') }],
+};
+// 5.2 q3 explain: "the buck wastes only about a quarter of a watt" (scene efficiency 90%).
+CHECKS['5.2/q3'].extra!.push({ name: 'buck at 90% wastes ~0.25 W', check: () => { const w = 2.5 * (1 / 0.9 - 1); return w > 0.2 && w < 0.32 ? true : `${w} W`; } });
+CHECKS['5.3/q1'] = { allowed: [100] };
+CHECKS['5.3/q3'] = { allowed: [0.1] };
