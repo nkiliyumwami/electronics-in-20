@@ -235,6 +235,9 @@ async function lessonPage(id: string) {
     );
   };
   stage.partsChanged = () => queueMicrotask(renderParts);
+  // Visibility can change with any control (e.g. switching buses), so refresh the list.
+  panelHost.addEventListener('click', () => setTimeout(renderParts, 50));
+  panelHost.addEventListener('change', () => setTimeout(renderParts, 50));
   let handle: SceneHandle = { check: () => ({ ok: false, msg: 'The scene is still loading.' }) };
   const loader = SCENES[id];
   if (loader) {

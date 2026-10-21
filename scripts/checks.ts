@@ -20,6 +20,7 @@ export interface Spec {
 }
 
 const r1 = (x: number) => Math.round(x * 10) / 10;
+const r2 = (x: number) => Math.round(x * 100) / 100;
 const eq = (a: number, b: number, what: string): true | string => (Math.abs(a - b) <= Math.abs(b) * 1e-6 + 1e-12 ? true : `${what}: ${a} ≠ ${b}`);
 
 export const CHECKS: Record<string, Spec> = {};
@@ -196,3 +197,31 @@ import { DATASHEET } from '../src/content/datasheet.ts';
   };
 }
 CHECKS['3.5/q3'] = { allowed: [5, 3.3] };
+
+// ============================================================ Module 4
+{
+  const hi = (vdd: number) => 0.7 * vdd;
+  const lo = (vdd: number) => 0.3 * vdd;
+  CHECKS['4.1/q1'] = {
+    allowed: [3.3, 5, 0.7, hi(5)],
+    extra: [{ name: '0.7 × 5 = 3.5 V', check: () => eq(hi(5), 3.5, 'VIH(5 V)') }],
+  };
+  CHECKS['4.1/q2'] = {
+    answer: hi(3.3),
+    traps: { '0.99': lo(3.3) }, // used the LOW threshold
+    allowed: [3.3, 0.7, 0.3, hi(3.3), lo(3.3), 1],
+  };
+  CHECKS['4.1/q3'] = { allowed: [3.3, 5, hi(3.3), hi(5)] };
+  // Explanation claims, checked here too.
+  CHECKS['4.1/q3'].extra = [
+    { name: 'explanation: 2.31 V and 0.99 V for 3.3 V', check: () => (eq(Math.round(hi(3.3) * 100) / 100, 2.31, 'hi') === true && eq(Math.round(lo(3.3) * 100) / 100, 0.99, 'lo') === true ? true : 'mismatch') },
+  ];
+}
+{
+  const V = 3.3, R = 10000;
+  CHECKS['4.2/q2'] = {
+    allowed: [10, V, 0, r2(((V / R) * 1000))],
+    extra: [{ name: '3.3 V ÷ 10 kΩ = 0.33 mA', check: () => eq(r2((V / R) * 1000), 0.33, 'mA') }],
+  };
+  CHECKS['4.2/q3'] = { allowed: [] };
+}

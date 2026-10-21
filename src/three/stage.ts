@@ -46,7 +46,7 @@ function getRenderer(): THREE.WebGLRenderer | null {
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.toneMapping = THREE.ACESFilmicToneMapping;
-    r.toneMappingExposure = 1.05;
+    r.toneMappingExposure = 0.95;
     const pm = new THREE.PMREMGenerator(r);
     sharedEnv = pm.fromScene(new RoomEnvironment(), 0.04).texture;
     pm.dispose();
@@ -109,7 +109,7 @@ export class Stage {
     this.water.visible = false;
 
     // Lighting: soft hemisphere + a key light; the room environment gives metals life.
-    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f8a, 1.4));
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f8a, 1.1));
     const key = new THREE.DirectionalLight(0xffffff, 1.6);
     key.position.set(4, 10, 6);
     this.scene.add(key);
@@ -379,6 +379,12 @@ export class Stage {
     for (const o of this.pickables) {
       const info = o.userData.part as PartInfo;
       if (!info || seen.has(info.name)) continue;
+      let hidden = false;
+      for (let p: THREE.Object3D | null = o; p && p !== this.root; p = p.parent) {
+        // Hidden parts are skipped, except whole twins hidden by the view toggle.
+        if (!p.visible && p !== this.real && p !== this.water) hidden = true;
+      }
+      if (hidden) continue;
       seen.add(info.name);
       out.push({ obj: o, info });
     }

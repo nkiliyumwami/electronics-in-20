@@ -42,7 +42,8 @@ async function select(page, label, value) {
   await page.selectOption(`select[aria-label="${label}"]`, value);
 }
 async function click(page, text) {
-  await page.getByRole('button', { name: text, exact: true }).first().click();
+  // Controls live in the panel; the parts list can contain buttons with the same names.
+  await page.locator('.panel').getByRole('button', { name: text, exact: true }).first().click();
 }
 async function clickIn(page, scope, text) {
   await page.locator(scope).getByRole('button', { name: text, exact: true }).first().click();
@@ -53,6 +54,16 @@ async function checkTask(page, n) {
   await q.getByRole('button', { name: /Check/ }).click();
   await page.waitForTimeout(150);
   return (await q.locator('.fb').innerText()).replace(/\s+/g, ' ');
+}
+/** Wait until a readout shows the given text (polling). */
+async function waitReadout(page, label, re, ms = 15000) {
+  const t = Date.now();
+  while (Date.now() - t < ms) {
+    const v = await page.locator(`.readout:has-text("${label}") .v`).innerText();
+    if (re.test(v)) return v;
+    await page.waitForTimeout(200);
+  }
+  return null;
 }
 async function failCard(page, ms = 4000) {
   try {
@@ -254,6 +265,54 @@ const SCENARIOS = {
     fb = await checkTask(page, 3);
     expect(fb.startsWith('Done') && led === 'lit', `PA5 output HIGH → LED ${led} → done`);
     await setRange(page, 'Explode the chip', 1);
+  },
+  async '4.1'(page) {
+    await setRange(page, 'Input voltage', 2.0);
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), '2.0 V → both disagree? no → not yet');
+    await setRange(page, 'Input voltage', 3.0);
+    const a = await page.locator('.readout:has-text("3.3 V chip reads") .v').innerText();
+    const b = await page.locator('.readout:has-text("5 V chip reads") .v').innerText();
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done') && a === 'HIGH' && b === 'undefined', `3.0 V → 3.3 V chip ${a}, 5 V chip ${b} → done`);
+  },
+  async '4.2'(page) {
+    await page.waitForTimeout(1500);
+    const ghost = await page.locator('.readout:has-text("Presses counted") .v').innerText();
+    expect(Number(ghost) > 0, `floating pin counts ghost presses while idle (${ghost})`);
+    await click(page, 'Pull-up resistor (10 kΩ)');
+    await click(page, 'Reset counter');
+    await click(page, 'Press the button once');
+    await page.waitForTimeout(600);
+    await waitReadout(page, 'Contact', /open/);
+    await page.waitForTimeout(3500);
+    const bounced = await page.locator('.readout:has-text("Presses counted") .v').innerText();
+    expect(Number(bounced) > 1, `pull-up but no debounce: one press counted ${bounced} times`);
+    await click(page, 'Software debounce (20 ms)');
+    await click(page, 'Reset counter');
+    await click(page, 'Press the button once');
+    await page.waitForTimeout(600);
+    await waitReadout(page, 'Contact', /open/);
+    await page.waitForTimeout(3500);
+    const one = await page.locator('.readout:has-text("Presses counted") .v').innerText();
+    const fb = await checkTask(page, 3);
+    expect(fb.startsWith("Done") && one === "1", `pull-up + debounce: counted ${one} → done (${fb.slice(0, 140)})`);
+  },
+  async '4.3'(page) {
+    await click(page, 'SPI (fast)');
+    await click(page, 'Send');
+    await page.waitForTimeout(3500);
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'SPI send does not satisfy the I2C task');
+    await click(page, 'UART (2 devices)');
+    await click(page, 'Send');
+    await page.waitForTimeout(3500);
+    await click(page, 'I2C (2 wires)');
+    await click(page, 'Send');
+    await page.waitForTimeout(3500);
+    const log = await page.locator('ol').innerText();
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done') && /Temp sensor answered/.test(log), 'I2C to 0x48 → answered → done');
   },
 };
 

@@ -34,8 +34,8 @@ export const M = {
   solder: () => mat('solder', () => std('#d5d9dc', 0.25, 1)),
   tin: () => mat('tin', () => std('#b9bec4', 0.35, 0.9)),
   fr4: () => mat('fr4', () => std('#cdbf86', 0.85)),
-  mask: () => mat('mask', () => std('#0f5e2f', 0.38, 0, { transparent: true, opacity: 0.9 })),
-  maskSolid: () => mat('maskSolid', () => std('#0f5e2f', 0.4)),
+  mask: () => mat('mask', () => std('#0a4a23', 0.35, 0, { transparent: true, opacity: 0.9 })),
+  maskSolid: () => mat('maskSolid', () => std('#0a4a23', 0.35)),
   silk: () => mat('silk', () => std('#fbfbf7', 0.7)),
   resistorBody: () => mat('resBody', () => std('#d8c49b', 0.55)),
   ceramic: () => mat('ceramic', () => std('#e09a3c', 0.6)),
@@ -646,7 +646,7 @@ export function fuse(): { group: THREE.Group; setBlown(b: boolean): void } {
 }
 
 /** A simple board (green PCB) with optional thickness. */
-export function smallBoard(w: number, d: number, color = '#0f5e2f'): THREE.Mesh {
+export function smallBoard(w: number, d: number, color = '#0a4a23'): THREE.Mesh {
   return mesh(new THREE.BoxGeometry(w, 0.16, d), std(color, 0.4), [0, -0.08, 0]);
 }
 
