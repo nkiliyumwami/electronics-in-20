@@ -495,6 +495,12 @@ export class Stage {
     return l;
   }
 
+  /** Remove a label for good (its HTML element goes too). */
+  unlabel(l: Label) {
+    l.obj.removeFromParent(); // fires 'removed', which takes the HTML element out
+    this.labels = this.labels.filter((x) => x !== l);
+  }
+
   // ---------------------------------------------------- parts & tooltips
   /** Make an object tappable; tapping shows name, job and symbol. */
   part(obj: THREE.Object3D, info: PartInfo) {
@@ -820,10 +826,7 @@ export class Stage {
     p.group.removeFromParent();
     p.group.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
     ((p.group.children[0] as THREE.Mesh).material as THREE.Material).dispose();
-    if (p.label) {
-      p.label.obj.removeFromParent(); // fires 'removed', which takes the HTML element out
-      this.labels = this.labels.filter((l) => l !== p.label);
-    }
+    if (p.label) this.unlabel(p.label);
     this.dropGlow(p.glow);
     this.pointers = this.pointers.filter((x) => x !== p);
   }

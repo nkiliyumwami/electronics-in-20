@@ -168,7 +168,8 @@ export function espBench(ctx: SceneCtx, opts: { cols?: number; espCol?: number; 
     jumper: (a, b, color, name, job, h) => {
       const j = jumper(a, b, color, h);
       bb.group.add(j.group);
-      ctx.stage.part(j.group, { name, job: job ?? 'A Dupont jumper wire. Everything along one wire sits at the same voltage.', symbol: 'wire' });
+      // Minor wires (power and GND hops) pass an empty name and stay out of the parts list.
+      if (name) ctx.stage.part(j.group, { name, job: job || 'A Dupont jumper wire. Everything along one wire sits at the same voltage.', symbol: 'wire' });
       return j;
     },
   };

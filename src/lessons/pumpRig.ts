@@ -71,7 +71,7 @@ export function pumpRig(ctx: SceneCtx, opts: { relay?: boolean } = {}): PumpRig 
   stage.part(rg.group, { name: 'Gate resistor (220 Ω)', job: 'Softens the current spike as the gate charges.', symbol: 'resistor' });
   stage.part(rpd.group, { name: 'Pull-down (10 kΩ)', job: 'Holds the gate at 0 V while the ESP32 boots, so the pump never starts by accident.', symbol: 'resistor' });
   const sigJ = b.jumper(b.free('D26'), H(16, 0), 'yellow', 'D26 to the gate resistor', 'Carries the 3.3 V control signal.', 0.6);
-  const pdJ = b.jumper(H(24, 0), H(24, 'top-'), 'black', 'Pull-down to GND', '', 0.5);
+  const pdJ = b.jumper(H(24, 0), H(24, 'top-'), 'black', '', '', 0.5);
   const srcJ = b.jumper(H(22, 0), H(22, 'top-'), 'black', 'Source to GND', 'The pump\'s current returns to GND through here.', 0.5);
   gateParts.add(sigJ.group, pdJ.group, srcJ.group);
   b.tag('D26');
@@ -103,7 +103,7 @@ export function pumpRig(ctx: SceneCtx, opts: { relay?: boolean } = {}): PumpRig 
   const fd = new THREE.Group();
   const dio = axialDiode(H(21, 3).distanceTo(H(25, 3)));
   dio.group.position.copy(H(21, 3).lerp(H(25, 3), 0.5));
-  const dJ = b.jumper(H(25, 1), H(25, 'top+'), 'red', 'Diode to 5 V', '', 0.5);
+  const dJ = b.jumper(H(25, 1), H(25, 'top+'), 'red', '', '', 0.5);
   fd.add(dio.group, dJ.group);
   fd.visible = false;
   b.bb.group.add(fd);

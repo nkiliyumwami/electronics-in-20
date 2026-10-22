@@ -245,6 +245,10 @@ a.btn.primary { color: var(--brand-ink); }
 .parts button:hover { background: var(--surface-2); }
 
 /* ---------- control panel ---------- */
+.facts { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.facts th { text-align: left; color: var(--ink-2); font-weight: 600; padding: 5px 10px 5px 0; width: 34%; vertical-align: top; }
+.facts td { padding: 5px 0; }
+.facts tr + tr { border-top: 1px solid var(--line); }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-top: 12px; display: grid; gap: 12px; box-shadow: var(--shadow); }
 .panel:empty { display: none; }
 .ctl { display: grid; gap: 4px; }

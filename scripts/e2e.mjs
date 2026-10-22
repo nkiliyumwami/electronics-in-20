@@ -335,40 +335,60 @@ const SCENARIOS = {
     expect(fb.startsWith('Done'), 'with the diode: clean switch-off → done');
   },
   async '5.1'(page) {
-    let fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet'), 'default budget lasts under a week');
-    await click(page, 'Status LED on (20 mA)');
-    await click(page, 'Burst once a minute');
-    await click(page, 'Sleep (0.05 mA)');
-    const life = await page.locator('.readout:has-text("Estimated life") .v').innerText();
-    fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done'), `lean setup → ${life} → done`);
-    const peak = await page.locator('.readout:has-text("Peak current") .v').innerText();
-    expect(/801 mA/.test(peak), `peak still includes the 800 mA burst (${peak})`);
+    const facts = await page.locator('table.facts').innerText();
+    expect(/3\.3 V only/.test(facts) && /0x76/.test(facts), 'facts sheet shows the supply and the address');
+    await select(page, 'BME280 GND goes to', 'GND');
+    await select(page, 'BME280 VIN goes to', 'VIN5');
+    const card = await failCard(page);
+    expect(card && /5 V on a 3\.3 V-only board/.test(card), 'VIN to the 5 V pin → damage warning');
+    await clickIn(page, '.failcard', 'Undo (VIN to 3V3)');
+    await select(page, 'BME280 SCL goes to', 'D21');
+    await select(page, 'BME280 SDA goes to', 'D22');
+    let scan = await page.locator('.readout:has-text("I2C scanner says") .v').innerText();
+    const note = await page.locator('.panel .note').last().innerText();
+    expect(/No I2C/.test(scan) && /swapped/.test(note), `SDA/SCL swapped → ${scan}`);
+    await select(page, 'BME280 SCL goes to', 'D22');
+    await select(page, 'BME280 SDA goes to', 'D21');
+    scan = await page.locator('.readout:has-text("I2C scanner says") .v').innerText();
+    const fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done') && /0x76/.test(scan), `wired right → ${scan} → done`);
   },
   async '5.2'(page) {
-    const card = await failCard(page, 9000);
-    expect(card && /Thermal shutdown/.test(card), 'LDO at 12 V / 500 mA → thermal shutdown');
-    let fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet'), 'LDO setup fails the task');
-    await clickIn(page, '.failcard', 'Switch to the buck regulator');
-    await page.waitForTimeout(500);
-    fb = await checkTask(page, 3);
-    const heat = await page.locator('.readout:has-text("Heat in regulator") .v').innerText();
-    expect(fb.startsWith('Done'), `buck regulator, heat ${heat} → done`);
+    const send = async (a) => {
+      await select(page, 'Call address', a);
+      await click(page, 'Send a request');
+      await page.locator('.panel button:has-text("Send a request"):not([disabled])').waitFor({ timeout: 30000 });
+      return page.locator('.readout:has-text("Last reply") .v').innerText();
+    };
+    let r = await send('0x23');
+    expect(/0x23 answered/.test(r), `call 0x23 → ${r}`);
+    await click(page, 'Add a second BME280');
+    r = await send('0x76');
+    expect(/garbage/.test(r), `two devices at 0x76 → ${r}`);
+    await click(page, '0x77');
+    r = await send('0x76');
+    const r2 = await send('0x77');
+    const fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done') && /answered/.test(r) && /answered/.test(r2), `second BME280 at 0x77: both answer → done`);
   },
   async '5.3'(page) {
-    await page.waitForTimeout(1500);
-    const r = await page.locator('.readout:has-text("Chip resets") .v').innerText();
-    expect(Number(r) > 0, `no cap → chip resets (${r})`);
-    await click(page, 'Fit the 100 nF capacitor');
-    let fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet'), 'cap 40 mm away → not yet');
-    await setRange(page, 'Capacitor distance from the power pin', 4);
-    await page.waitForTimeout(300);
-    const dip = await page.locator('.readout:has-text("Dip during") .v').innerText();
-    fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done'), `cap at 4 mm → dip ${dip} → done`);
+    const sendWait = async () => {
+      await click(page, 'Send');
+      await page.locator('.panel button:text-is("Send"):not([disabled])').waitFor({ timeout: 30000 });
+      return page.locator('.readout:has-text("Serial monitor") .v').innerText();
+    };
+    let m = await sendWait();
+    expect(/nothing/.test(m), `GPS TX on TX2 → ${m}`);
+    await select(page, 'GPS TX goes to', 'D16');
+    m = await sendWait();
+    expect(/garbled/.test(m), `crossed, wrong baud → ${m}`);
+    await select(page, 'Baud rate in your code', '9600');
+    m = await sendWait();
+    const fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done') && /\$GPGGA/.test(m), `crossed, 9600 baud → ${m.slice(0, 30)} → done`);
+    await click(page, 'SPI (SD card)');
+    m = await sendWait();
+    expect(/log\.csv/.test(m), `SPI send → ${m}`);
   },
   async '6.1'(page) {
     const wire = async (a, b) => {
