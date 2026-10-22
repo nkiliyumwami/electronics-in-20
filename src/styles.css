@@ -258,7 +258,7 @@ a.btn.primary { color: var(--brand-ink); }
 .ctl .row input[type='range'] { flex: 1; }
 .ctl .row .btn.small { min-width: 36px; padding: 4px 8px; }
 input[type='range'] { width: 100%; accent-color: var(--brand); height: 32px; }
-select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 10px; min-height: 40px; }
+select { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 10px; min-height: 40px; max-width: 100%; min-width: 0; text-overflow: ellipsis; }
 .btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
 .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .seg button { border: 0; border-right: 1px solid var(--line); background: var(--surface); padding: 8px 12px; cursor: pointer; font-weight: 600; min-height: 40px; }
