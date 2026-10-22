@@ -15,4 +15,7 @@ export const SCENES: Record<string, Loader> = {
   '3.2': () => import('./scenes/l3_2'),
   '3.3': () => import('./scenes/l3_3'),
   '3.4': () => import('./scenes/l3_4'),
+  '4.1': () => import('./scenes/l4_1'),
+  '4.2': () => import('./scenes/l4_2'),
+  '4.3': () => import('./scenes/l4_3'),
 };

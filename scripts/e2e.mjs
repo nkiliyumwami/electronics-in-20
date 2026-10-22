@@ -287,60 +287,52 @@ const SCENARIOS = {
     const fb = await checkTask(page, 3);
     expect(fb.startsWith('Done') && v === '3.33 V' && r === 'HIGH', `divider: 5 V → ${v}, reads ${r} → done`);
   },
-  async '3.5'(page) {
-    let fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet'), 'PA5 starts as input');
-    await page.selectOption('select:has(option[value="5"])', '5');
-    await click(page, 'Output (drive)');
-    await click(page, 'HIGH (3.3 V)');
-    const led = await page.locator('.readout:has-text("LED on PA5") .v').innerText();
-    fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done') && led === 'lit', `PA5 output HIGH → LED ${led} → done`);
-    await setRange(page, 'Explode the chip', 1);
-  },
   async '4.1'(page) {
-    await setRange(page, 'Input voltage', 2.0);
+    await setRange(page, 'Duty cycle', 25);
+    const avg = await page.locator('.readout:has-text("Average voltage") .v').innerText();
+    expect(avg === '0.83 V', `25% duty → average ${avg}`);
+    await click(page, 'Flip the LED around');
     let fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet'), '2.0 V → both disagree? no → not yet');
-    await setRange(page, 'Input voltage', 3.0);
-    const a = await page.locator('.readout:has-text("3.3 V chip reads") .v').innerText();
-    const b = await page.locator('.readout:has-text("5 V chip reads") .v').innerText();
+    expect(fb.startsWith('Not yet') && /backwards/.test(fb), 'LED flipped → not yet');
+    await click(page, 'Flip the LED around');
     fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done') && a === 'HIGH' && b === 'undefined', `3.0 V → 3.3 V chip ${a}, 5 V chip ${b} → done`);
+    expect(fb.startsWith('Done'), `25% duty, LED forward → done (${fb.slice(0, 40)})`);
+    const q1 = page.locator('.q').nth(0);
+    await q1.locator('input').fill('2.475');
+    await q1.getByRole('button', { name: 'Check' }).click();
+    const t = await q1.locator('.fb').innerText();
+    expect(/off/.test(t), 'q1: 2.475 → "that is the share of time it is off"');
   },
   async '4.2'(page) {
-    await page.waitForTimeout(1500);
-    const ghost = await page.locator('.readout:has-text("Presses counted") .v').innerText();
-    expect(Number(ghost) > 0, `floating pin counts ghost presses while idle (${ghost})`);
-    await click(page, 'Pull-up resistor (10 kΩ)');
-    await click(page, 'Reset counter');
-    await click(page, 'Press the button once');
-    await page.waitForTimeout(5000); // one slow-motion press lasts about 3 s
-    const bounced = await page.locator('.readout:has-text("Presses counted") .v').innerText();
-    expect(Number(bounced) > 1, `pull-up but no debounce: one press counted ${bounced} times`);
-    await click(page, 'Software debounce (20 ms)');
-    await click(page, 'Reset counter');
-    await click(page, 'Press the button once');
-    await page.waitForTimeout(5000);
-    const one = await page.locator('.readout:has-text("Presses counted") .v').innerText();
-    const fb = await checkTask(page, 3);
-    expect(fb.startsWith("Done") && one === "1", `pull-up + debounce: counted ${one} → done (${fb.slice(0, 140)})`);
+    await click(page, 'Set D26 HIGH (3.3 V)');
+    const card = await failCard(page);
+    expect(card && /40 mA/.test(card), `pump straight on the pin → overload (${(card ?? '').slice(0, 60)})`);
+    await clickIn(page, '.failcard', 'Use the MOSFET');
+    await click(page, 'Set D26 HIGH (3.3 V)');
+    await page.waitForTimeout(400);
+    const i = await page.locator('.readout:has-text("Pump current") .v').innerText();
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done') && /150 mA|149 mA|0\.15 A/.test(i), `through the MOSFET, gate 3.3 V: ${i} → done`);
+    // Half-on with the bigger pump: the MOSFET acts like a resistor and heats.
+    await click(page, 'Bigger 12 V pump (1 A)');
+    await setRange(page, 'Gate voltage', 2.2);
+    await page.waitForTimeout(3000);
+    const note = await page.locator('.panel .note').last().innerText();
+    const t = await page.locator('.readout:has-text("MOSFET temperature") .v').innerText();
+    expect(/Half-on/.test(note) && parseInt(t) > 30, `half-on with the 1 A pump: warning shown, MOSFET at ${t} and rising`);
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'half-on → not yet');
   },
   async '4.3'(page) {
-    await click(page, 'SPI (fast)');
-    await click(page, 'Send');
-    await page.waitForTimeout(3500);
-    let fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet'), 'SPI send does not satisfy the I2C task');
-    await click(page, 'UART (2 devices)');
-    await click(page, 'Send');
-    await page.waitForTimeout(3500);
-    await click(page, 'I2C (2 wires)');
-    await click(page, 'Send');
-    await page.waitForTimeout(3500);
-    const log = await page.locator('ol').innerText();
-    fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done') && /Temp sensor answered/.test(log), 'I2C to 0x48 → answered → done');
+    await click(page, 'Pump ON (D26 HIGH)');
+    await click(page, 'Pump OFF (D26 LOW)');
+    const card = await failCard(page);
+    expect(card && /Spike/.test(card), 'switch-off without a diode → spike');
+    await clickIn(page, '.failcard', 'Fit the flyback diode');
+    await click(page, 'Pump ON (D26 HIGH)');
+    await click(page, 'Pump OFF (D26 LOW)');
+    const fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), 'with the diode: clean switch-off → done');
   },
   async '5.1'(page) {
     let fb = await checkTask(page, 3);
