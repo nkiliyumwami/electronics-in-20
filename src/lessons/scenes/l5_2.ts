@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { SceneCtx, SceneHandle } from '../types';
-import { contactShadow, mesh, std, smallBoard, M, setHeat, wire } from '../../three/lib';
+import { contactShadow, mesh, std, smallBoard, M, setHeat, wire, marking } from '../../three/lib';
 import { pipe, tank } from '../../three/water';
 import { prepCanvas, cssVar } from '../../core/panel';
 import { dense, flowAlong, FLOW_COLOR, WATER_FLOW } from '../kit';
@@ -39,6 +39,10 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   ldo.add(mesh(new THREE.BoxGeometry(1.0, 0.9, 0.45), ldoMat, [0, 0.9, 0]));
   ldo.add(mesh(new THREE.BoxGeometry(1.0, 0.65, 0.12), M.steel(), [0, 1.65, -0.17]));
   for (let i = -1; i <= 1; i++) ldo.add(mesh(new THREE.BoxGeometry(0.08, 0.5, 0.04), M.tin(), [i * 0.254, 0.25, 0]));
+  const ldoText = marking(0.85, 0.45, ['LM1117T', '-5.0']);
+  ldoText.rotation.set(0, 0, 0);
+  ldoText.position.set(0, 0.9, 0.227);
+  ldo.add(ldoText);
   stage.real.add(ldo);
   stage.part(ldo, { name: 'Linear regulator (LDO)', job: 'Throttles the input down to 5 V, burning the extra voltage as heat.', symbol: 'regulator' });
   // Buck module.
@@ -48,6 +52,9 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   buck.add(mesh(new THREE.BoxGeometry(1.8, 0.1, 1.2), buckMat, [0, 0.05, 0]));
   const coil = mesh(new THREE.TorusGeometry(0.28, 0.12, 12, 24), std('#5a5a5a', 0.4, 0.5), [-0.35, 0.22, 0], [Math.PI / 2, 0, 0]);
   buck.add(coil, mesh(new THREE.BoxGeometry(0.3, 0.08, 0.3), M.plasticDark(), [0.35, 0.14, -0.2]));
+  const buckText = marking(0.26, 0.12, ['MP1584']);
+  buckText.position.set(0.35, 0.181, -0.2);
+  buck.add(buckText);
   for (const x of [0.35, 0.65]) buck.add(mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.35, 16), M.capBlue(), [x, 0.27, 0.3]));
   stage.real.add(buck);
   stage.part(buck, { name: 'Switching regulator (buck)', job: 'Switches fully on and off very fast and smooths the result with an inductor (the coil) and capacitors. About 90% efficient.', symbol: 'regulator' });

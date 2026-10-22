@@ -18,8 +18,9 @@ async function open(id) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  // QUERY=nowebgl runs every scenario on the 2D fallback.
-  const q = process.env.QUERY ? `?${process.env.QUERY}` : '';
+  // QUERY=nowebgl runs every scenario on the 2D fallback. By default the tests use
+  // ?lowq: shadows only cost time in the software renderer and never change task logic.
+  const q = `?${process.env.QUERY ?? 'lowq'}`;
   await page.goto(id === 'capstone' ? `${base}${q}#/capstone` : `${base}${q}#/lesson/${id === 'progress' ? '1.1' : id}`);
   await page.waitForSelector('.panel .ctl, .panel .btn', { timeout: 15000 });
   await page.waitForTimeout(600);

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { SceneCtx, SceneHandle } from '../types';
-import { mesh, std, M, smallBoard, smdLed, chipPassive, contactShadow } from '../../three/lib';
+import { mesh, std, M, smallBoard, smdLed, chipPassive, contactShadow, marking, smdCode } from '../../three/lib';
 import { Exploder } from '../../tools/explode';
 import { DATASHEET } from '../../content/datasheet';
 import { h } from '../../core/dom';
@@ -26,6 +26,9 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   const moldBot = mesh(new THREE.BoxGeometry(size, 0.08, size), M.plasticDark(), [0, 0.05, 0]);
   const dot = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.01, 12), std('#444', 0.4), [-size / 2 + 0.16, 0.225, -size / 2 + 0.16]);
   moldTop.add(dot);
+  const lidText = marking(1.0, 0.55, ['MCU-32', 'F103 2540']);
+  lidText.position.y = 0.051;
+  moldTop.add(lidText);
   dot.position.set(-size / 2 + 0.16, 0.055, -size / 2 + 0.16);
   const die = new THREE.Group();
   die.add(mesh(new THREE.BoxGeometry(0.5, 0.03, 0.5), M.die(), [0, 0.12, 0]));
@@ -92,7 +95,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
 
   // LED + resistor on PA5, joined by a copper trace.
   const p5 = gpio(5).position;
-  const res = chipPassive(0.2, 0.125, 'R');
+  const res = chipPassive(0.2, 0.125, 'R', smdCode(1000));
   res.scale.setScalar(2);
   res.position.set(p5.x, 0, 1.25);
   res.rotation.y = Math.PI / 2;

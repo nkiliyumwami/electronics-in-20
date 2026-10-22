@@ -67,11 +67,11 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   stage.part(place(jst2(2.0), 4, 8), { name: 'BT1 battery connector', job: 'Where the 5 V battery plugs in.', symbol: 'connector' });
   const sw = tactSmd();
   stage.part(place(sw.group, 12, 18), { name: 'SW1 button', job: 'Connects its two sides while pressed.', symbol: 'button', actions: () => [{ label: pressed ? 'Release' : 'Press', run: () => setPressed(!pressed) }] });
-  stage.part(place(chipPassive(0.2, 0.125, 'R'), 20, 20, Math.PI / 2), { name: 'R1 10 kΩ', job: 'Pull-down: keeps the gate at 0 V when the button is not pressed.', symbol: 'resistor' });
-  stage.part(place(chipPassive(0.2, 0.125, 'R'), 22, 7), { name: 'R2 220 Ω', job: 'Sets the LED current.', symbol: 'resistor' });
+  stage.part(place(chipPassive(0.2, 0.125, 'R', '103'), 20, 20, Math.PI / 2), { name: 'R1 10 kΩ', job: 'Pull-down: keeps the gate at 0 V when the button is not pressed.', symbol: 'resistor' });
+  stage.part(place(chipPassive(0.2, 0.125, 'R', '221'), 22, 7), { name: 'R2 220 Ω', job: 'Sets the LED current.', symbol: 'resistor' });
   const led = smdLed('#ff3020');
   stage.part(place(led.group, 28, 7), { name: 'D1 LED', job: 'Lights when Q1 switches on.', symbol: 'led' });
-  stage.part(place(sot23(), 32, 16), { name: 'Q1 MOSFET', job: 'The switch: gate controls drain-to-source.', symbol: 'mosfet' });
+  stage.part(place(sot23('A09T'), 32, 16), { name: 'Q1 MOSFET', job: 'The switch: gate controls drain-to-source.', symbol: 'mosfet' });
   stage.part(b.layers.maskTop, { name: 'Bare board', job: 'Pads but no copper traces yet: the layout comes after the schematic.', symbol: 'pcb' });
   const rats = new THREE.Group();
   b.group.add(rats);

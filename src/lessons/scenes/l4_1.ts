@@ -49,7 +49,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   const genLabel = stage.label('', gen, new THREE.Vector3(0, 1.4, 0), 'big');
 
   const mkChip = (col: number, vdd: number, name: string) => {
-    const c = dip(8);
+    const c = dip(8, [vdd < 4 ? '74LVC1G14' : '74HC1G14']);
     c.group.position.copy(H(col, 4).lerp(H(col, 5), 0.5)).add(new THREE.Vector3(0.381, 0, 0));
     stage.real.add(c.group);
     stage.part(c.group, { name, job: `Reads its input as HIGH above ${(0.7 * vdd).toFixed(2)} V and LOW below ${(0.3 * vdd).toFixed(2)} V (0.7 and 0.3 × its ${vdd} V supply).`, symbol: 'chip' });

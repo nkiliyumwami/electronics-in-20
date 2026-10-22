@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { resistorBands, heatColor } from '../sim/physics';
 
 // Shared, procedurally built component library. Units: 1 = 1 cm.
@@ -64,6 +65,45 @@ function mesh(geo: THREE.BufferGeometry, m: THREE.Material, pos?: [number, numbe
   if (pos) o.position.set(...pos);
   if (rot) o.rotation.set(...rot);
   return o;
+}
+
+// --------------------------------------------------------------- marking
+/**
+ * Laser-etched / printed text on top of a package. A horizontal plane w × d
+ * (units) facing up; lines are centred and sized to fit. Place it just above the top face.
+ */
+export function marking(w: number, d: number, lines: string[], color = '#bfc4ca'): THREE.Mesh {
+  const px = 512;
+  const c = document.createElement('canvas');
+  c.width = px;
+  c.height = Math.max(32, Math.round((px * d) / w));
+  const g = c.getContext('2d')!;
+  g.clearRect(0, 0, c.width, c.height);
+  g.fillStyle = color;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  const longest = Math.max(1, ...lines.map((l) => l.length));
+  const size = Math.min(c.height / (lines.length * 1.25), (c.width * 1.6) / longest);
+  g.font = `600 ${size}px "Consolas", ui-monospace, monospace`;
+  lines.forEach((l, i) => g.fillText(l, c.width / 2, c.height / 2 + (i - (lines.length - 1) / 2) * size * 1.15));
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, d),
+    new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.6, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }),
+  );
+  m.rotation.x = -Math.PI / 2;
+  m.userData.noShadow = true;
+  return m;
+}
+
+/** SMD resistor code: 3 digits (two significant + zeros), e.g. 10 kΩ → "103", 220 Ω → "221". */
+export function smdCode(ohms: number): string {
+  if (ohms < 10) return `${String(ohms).replace('.', 'R')}`;
+  const exp = Math.floor(Math.log10(ohms)) - 1;
+  const digits = Math.round(ohms / Math.pow(10, exp));
+  return `${digits}${exp}`;
 }
 
 // ---------------------------------------------------------------- glow
@@ -323,42 +363,91 @@ export function breadboard(cols = 30, rails = true): BreadboardObj {
   const W = cols * p + 0.6;
   const D = rails ? 5.5 : 3.5;
   const T = 0.85;
-  const body = mesh(new THREE.BoxGeometry(W, T, D), M.boardWhite(), [0, -T / 2, 0]);
-  g.add(body);
-  const groove = mesh(new THREE.BoxGeometry(W - 0.2, 0.02, 0.28), std('#dedbd2', 0.8), [0, 0.001, 0]);
-  g.add(groove);
   const x0 = -((cols - 1) * p) / 2;
-  const rowZ = (r: number) => (r < 5 ? -0.4 - (4 - r) * p - 0.0 : 0.4 + (r - 5) * p);
+  const rowZ = (r: number) => (r < 5 ? -0.4 - (4 - r) * p : 0.4 + (r - 5) * p);
   const railZ = { 'top-': -2.35, 'top+': -2.1, 'bot+': 2.1, 'bot-': 2.35 } as const;
-  // Holes as an instanced mesh.
-  const holeGeo = new THREE.BoxGeometry(0.1, 0.012, 0.1);
-  const holeMat = std('#3a3c3e', 0.9);
-  const positions: THREE.Vector3[] = [];
-  for (let c = 0; c < cols; c++) for (let r = 0; r < 10; r++) positions.push(new THREE.Vector3(x0 + c * p, 0.002, rowZ(r)));
-  for (let c = 0; c < cols && rails; c++) {
-    if (c % 6 === 5) continue;
-    for (const z of Object.values(railZ)) positions.push(new THREE.Vector3(x0 + c * p, 0.002, z));
+
+  // The top face is a printed texture: recessed holes with metal clips inside,
+  // row letters a–j, column numbers 1…n (as on real boards), rail stripes.
+  const ppu = 220; // texture pixels per unit
+  const c = document.createElement('canvas');
+  c.width = Math.round(W * ppu);
+  c.height = Math.round(D * ppu);
+  const g2 = c.getContext('2d')!;
+  const X = (x: number) => (x + W / 2) * ppu;
+  const Z = (z: number) => (z + D / 2) * ppu;
+  g2.fillStyle = '#f3f1ea';
+  g2.fillRect(0, 0, c.width, c.height);
+  // Centre channel.
+  g2.fillStyle = '#dcd8cd';
+  g2.fillRect(X(-W / 2 + 0.12), Z(-0.13), (W - 0.24) * ppu, 0.26 * ppu);
+  g2.fillStyle = '#c9c4b7';
+  g2.fillRect(X(-W / 2 + 0.12), Z(-0.02), (W - 0.24) * ppu, 0.04 * ppu);
+  const hole = (x: number, z: number) => {
+    const s = 0.11 * ppu;
+    const hx = X(x) - s / 2, hz = Z(z) - s / 2;
+    g2.fillStyle = '#c8c4b8'; // bevel
+    g2.fillRect(hx - 2, hz - 2, s + 4, s + 4);
+    const grd = g2.createLinearGradient(hx, hz, hx, hz + s);
+    grd.addColorStop(0, '#1d1e20');
+    grd.addColorStop(1, '#45484c');
+    g2.fillStyle = grd;
+    g2.fillRect(hx, hz, s, s);
+    g2.fillStyle = '#9aa1a8'; // the spring clip deep inside
+    g2.fillRect(hx + s * 0.38, hz + s * 0.2, s * 0.24, s * 0.6);
+  };
+  for (let col = 0; col < cols; col++) for (let r = 0; r < 10; r++) hole(x0 + col * p, rowZ(r));
+  // Labels: column numbers every column (bold every 5th), row letters both ends.
+  g2.fillStyle = '#7a776f';
+  g2.textAlign = 'center';
+  g2.textBaseline = 'middle';
+  for (let col = 0; col < cols; col++) {
+    const n = col + 1;
+    g2.font = `${n % 5 === 0 || n === 1 ? 'bold ' : ''}${Math.round(0.11 * ppu)}px system-ui, sans-serif`;
+    for (const z of [rowZ(0) - 0.24, rowZ(9) + 0.24]) g2.fillText(String(n), X(x0 + col * p), Z(z));
   }
-  const inst = new THREE.InstancedMesh(holeGeo, holeMat, positions.length);
-  const mtx = new THREE.Matrix4();
-  positions.forEach((pos, i) => inst.setMatrixAt(i, mtx.makeTranslation(pos.x, pos.y, pos.z)));
-  g.add(inst);
-  // Rail stripes.
-  const red = std('#d23a32', 0.6);
-  const blue = std('#2b62c4', 0.6);
-  const stripe = (z: number, m: THREE.Material) => g.add(mesh(new THREE.BoxGeometry(W - 0.4, 0.004, 0.04), m, [0, 0.002, z]));
+  g2.font = `bold ${Math.round(0.12 * ppu)}px system-ui, sans-serif`;
+  for (let r = 0; r < 10; r++) {
+    const letter = 'abcdefghij'[r];
+    g2.fillText(letter, X(x0 - 0.2), Z(rowZ(r)));
+    g2.fillText(letter, X(-x0 + 0.2), Z(rowZ(r)));
+  }
   if (rails) {
-    stripe(-2.55, blue);
-    stripe(-1.9, red);
-    stripe(1.9, red);
-    stripe(2.55, blue);
+    for (let col = 0; col < cols; col++) {
+      if (col % 6 === 5) continue;
+      for (const z of Object.values(railZ)) hole(x0 + col * p, z);
+    }
+    const stripe = (z: number, color: string) => {
+      g2.fillStyle = color;
+      g2.fillRect(X(-W / 2 + 0.2), Z(z) - 0.02 * ppu, (W - 0.4) * ppu, 0.04 * ppu);
+    };
+    stripe(-2.55, '#2b62c4');
+    stripe(-1.9, '#d23a32');
+    stripe(1.9, '#d23a32');
+    stripe(2.55, '#2b62c4');
   }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  const top = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.78 });
+  const side = M.boardWhite();
+  // Rounded body, with the printed top as a thin decal (RoundedBoxGeometry has no face groups).
+  const body = new THREE.Mesh(new RoundedBoxGeometry(W, T, D, 3, 0.06), side);
+  body.position.y = -T / 2;
+  // The decal stops short of the rounded edge; crop the texture to match.
+  const inset = 0.06;
+  tex.repeat.set((W - 2 * inset) / W, (D - 2 * inset) / D);
+  tex.offset.set(inset / W, inset / D);
+  const decal = new THREE.Mesh(new THREE.PlaneGeometry(W - 2 * inset, D - 2 * inset), top);
+  decal.rotation.x = -Math.PI / 2;
+  decal.position.y = 0.001;
+  g.add(body, decal);
   return {
     group: g,
     pitch: p,
     cols,
-    hole: (c, r) => {
-      const x = x0 + c * p;
+    hole: (col, r) => {
+      const x = x0 + col * p;
       if (typeof r === 'number') return new THREE.Vector3(x, 0, rowZ(r));
       return new THREE.Vector3(x, 0, railZ[r]);
     },
@@ -488,13 +577,19 @@ export function electrolyticCap(height = 0.9, radius = 0.32): ElectroObj {
 
 // ----------------------------------------------------------- semis
 /** TO-220 power MOSFET standing up, legs G-D-S along X. */
-export function mosfetTO220(): { group: THREE.Group; body: THREE.Mesh; bodyMat: THREE.MeshStandardMaterial; legs: THREE.Vector3[] } {
+export function mosfetTO220(mark: string[] = ['IRLZ44N', '2615']): { group: THREE.Group; body: THREE.Mesh; bodyMat: THREE.MeshStandardMaterial; legs: THREE.Vector3[] } {
   const g = new THREE.Group();
   const bodyMat = M.plasticBlack().clone();
   const body = mesh(new THREE.BoxGeometry(1.0, 0.9, 0.45), bodyMat, [0, 1.05, 0]);
   const tab = mesh(new THREE.BoxGeometry(1.0, 0.65, 0.12), M.steel(), [0, 1.8, -0.17]);
   const hole = mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.14, 16), std('#1a1a1a', 0.8), [0, 1.85, -0.17], [Math.PI / 2, 0, 0]);
   g.add(body, tab, hole);
+  if (mark.length) {
+    const t = marking(0.8, 0.5, mark);
+    t.rotation.set(0, 0, 0); // front face, facing +z
+    t.position.set(0, 1.05, 0.227);
+    g.add(t);
+  }
   const legs: THREE.Vector3[] = [];
   for (let i = -1; i <= 1; i++) {
     g.add(mesh(new THREE.BoxGeometry(0.08, 0.7, 0.04), M.tin(), [i * 0.254, 0.3, 0]));
@@ -504,9 +599,14 @@ export function mosfetTO220(): { group: THREE.Group; body: THREE.Mesh; bodyMat: 
 }
 
 /** SOT-23 (3 pins) SMD package. Size ≈ 2.9 × 1.3 mm → 0.29 × 0.13. */
-export function sot23(): THREE.Group {
+export function sot23(mark = ''): THREE.Group {
   const g = new THREE.Group();
   g.add(mesh(new THREE.BoxGeometry(0.29, 0.1, 0.13), M.plasticDark(), [0, 0.07, 0]));
+  if (mark) {
+    const t = marking(0.24, 0.1, [mark]);
+    t.position.y = 0.121;
+    g.add(t);
+  }
   const lp = new THREE.BoxGeometry(0.045, 0.02, 0.07);
   g.add(mesh(lp, M.tin(), [-0.095, 0.02, 0.095]));
   g.add(mesh(lp, M.tin(), [0.095, 0.02, 0.095]));
@@ -515,10 +615,16 @@ export function sot23(): THREE.Group {
 }
 
 /** Chip resistor / capacitor. Size in cm (0805 = 0.2 × 0.125). */
-export function chipPassive(l = 0.2, w = 0.125, kind: 'R' | 'C' = 'R'): THREE.Group {
+export function chipPassive(l = 0.2, w = 0.125, kind: 'R' | 'C' = 'R', code = ''): THREE.Group {
   const g = new THREE.Group();
   const t = kind === 'R' ? 0.05 : 0.08;
   g.add(mesh(new THREE.BoxGeometry(l * 0.7, t, w), kind === 'R' ? M.plasticDark() : M.smdTan(), [0, t / 2 + 0.005, 0]));
+  if (code) {
+    // Resistor codes are printed in white on the black body; capacitors are unmarked.
+    const m = marking(l * 0.6, w * 0.8, [code], '#f2f2ee');
+    m.position.y = t + 0.006;
+    g.add(m);
+  }
   const capG = new THREE.BoxGeometry(l * 0.16, t + 0.01, w + 0.004);
   g.add(mesh(capG, M.tin(), [-l / 2 + l * 0.08, t / 2 + 0.005, 0]));
   g.add(mesh(capG, M.tin(), [l / 2 - l * 0.08, t / 2 + 0.005, 0]));
@@ -535,11 +641,16 @@ export function smdLed(color = '#ff3020'): { group: THREE.Group; lens: THREE.Mes
 }
 
 /** Quad flat package microcontroller with pins on four sides. */
-export function qfp(size = 1.0, pinsPerSide = 8): { group: THREE.Group; pins: THREE.Mesh[]; body: THREE.Mesh } {
+export function qfp(size = 1.0, pinsPerSide = 8, mark: string[] = ['MCU']): { group: THREE.Group; pins: THREE.Mesh[]; body: THREE.Mesh } {
   const g = new THREE.Group();
   const body = mesh(new THREE.BoxGeometry(size, 0.14, size), M.plasticDark(), [0, 0.1, 0]);
   const dot = mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.01, 12), std('#444', 0.4), [-size / 2 + 0.12, 0.175, -size / 2 + 0.12]);
   g.add(body, dot);
+  if (mark.length) {
+    const t = marking(size * 0.75, size * 0.5, mark);
+    t.position.y = 0.172;
+    g.add(t);
+  }
   const pins: THREE.Mesh[] = [];
   const pitch = (size * 0.8) / (pinsPerSide - 1);
   for (let s = 0; s < 4; s++) {
@@ -561,12 +672,17 @@ export function qfp(size = 1.0, pinsPerSide = 8): { group: THREE.Group; pins: TH
 }
 
 /** DIP-8 chip on legs (for breadboards). */
-export function dip(pins = 8): { group: THREE.Group; legs: THREE.Vector3[] } {
+export function dip(pins = 8, mark: string[] = []): { group: THREE.Group; legs: THREE.Vector3[] } {
   const g = new THREE.Group();
   const n = pins / 2;
   const L = n * 0.254 + 0.05;
   g.add(mesh(new THREE.BoxGeometry(L, 0.33, 0.64), M.plasticDark(), [0, 0.38, 0]));
   g.add(mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.01, 12), std('#444', 0.5), [-L / 2 + 0.12, 0.55, 0], [0, 0, 0]));
+  if (mark.length) {
+    const t = marking(L * 0.8, 0.4, mark);
+    t.position.y = 0.547;
+    g.add(t);
+  }
   const legs: THREE.Vector3[] = [];
   for (let i = 0; i < n; i++) {
     for (const z of [-0.381, 0.381]) {
@@ -673,6 +789,8 @@ export function contactShadow(w: number, d: number, opacity = 0.18): THREE.Mesh 
   m.rotation.x = -Math.PI / 2;
   m.position.y = -0.9;
   m.userData.noFrame = true;
+  m.userData.blobShadow = true;
+  m.userData.noShadow = true;
   return m;
 }
 

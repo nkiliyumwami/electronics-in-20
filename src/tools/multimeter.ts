@@ -3,6 +3,7 @@ import type { Elem, Solution } from '../sim/solver';
 import { fmt } from '../sim/physics';
 import type { Stage } from '../three/stage';
 import { M, mesh, std } from '../three/lib';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import type { Panel } from '../core/panel';
 import { h } from '../core/dom';
 
@@ -15,6 +16,59 @@ export interface ProbePoint {
   node: string;
   /** Position in the meter's parent space. */
   pos: THREE.Vector3;
+}
+
+const PROBE_TILT = 0.38; // lean towards the viewer (radians)
+const PROBE_SCALE = 0.65; // a bit under true size, so probes don't swamp a mini breadboard
+
+// Dial positions (radians clockwise from "up" on the face) for each mode.
+const DIAL_ANGLE: Record<MeterMode, number> = { V: -1.0, A: -0.35, OHM: 0.35, BEEP: 1.0 };
+
+/** The printed face plate: mode names around the dial, socket labels, brand. */
+function faceTexture(): THREE.CanvasTexture {
+  const W = 520, H = 950; // matches the 1.04 × 1.9 face
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const g = c.getContext('2d')!;
+  const X = (x: number) => (x / 1.04 + 0.5) * W;
+  const Z = (z: number) => (z / 1.9 + 0.5) * H;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#f2b51f';
+  g.font = 'bold 30px system-ui, sans-serif';
+  g.font = 'bold 22px system-ui, sans-serif';
+  g.fillText('DMM-20', X(0), Z(0.57));
+  // Dial ring and labels.
+  const cx = X(0), cz = Z(0.08), R = 0.4 * (W / 1.04);
+  g.strokeStyle = '#8a8f96';
+  g.lineWidth = 3;
+  g.beginPath();
+  g.arc(cx, cz, R * 0.72, 0, Math.PI * 2);
+  g.stroke();
+  const labels: [number, string, string][] = [
+    [-1.6, 'OFF', '#c9ccd1'],
+    [DIAL_ANGLE.V, 'V⎓', '#ffffff'],
+    [DIAL_ANGLE.A, 'mA⎓', '#ffffff'],
+    [DIAL_ANGLE.OHM, 'Ω', '#ffffff'],
+    [DIAL_ANGLE.BEEP, '•))', '#ffffff'],
+  ];
+  g.font = 'bold 34px system-ui, sans-serif';
+  for (const [a, t, col] of labels) {
+    g.fillStyle = col;
+    g.fillText(t, cx + Math.sin(a) * R, cz - Math.cos(a) * R);
+    g.fillRect(cx + Math.sin(a) * R * 0.74 - 3, cz - Math.cos(a) * R * 0.74 - 3, 6, 6);
+  }
+  // Socket labels.
+  g.font = 'bold 24px system-ui, sans-serif';
+  g.fillStyle = '#c9ccd1';
+  g.fillText('10A', X(-0.34), Z(0.88));
+  g.fillText('COM', X(0), Z(0.88));
+  g.fillText('VΩmA', X(0.34), Z(0.88));
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
 }
 
 const MODE_LABEL: Record<MeterMode, string> = { V: 'Volts (V)', A: 'Amps (A)', OHM: 'Ohms (Ω)', BEEP: 'Continuity ♪' };
@@ -92,18 +146,25 @@ export class Multimeter {
     const g = new THREE.Group();
     g.rotation.x = -0.35;
     g.position.y = 0.35;
-    const bumper = mesh(new THREE.BoxGeometry(1.25, 0.28, 2.1), std('#f2b51f', 0.6), [0, 0, 0]);
-    const face = mesh(new THREE.BoxGeometry(1.05, 0.06, 1.9), std('#2c2f33', 0.5), [0, 0.15, 0]);
-    const lcd = mesh(new THREE.PlaneGeometry(0.9, 0.42), new THREE.MeshBasicMaterial({ map: this.tex, toneMapped: false }), [0, 0.185, -0.6], [-Math.PI / 2, 0, 0]);
-    const dialBase = mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.06, 32), std('#45494e', 0.5), [0, 0.19, 0.1]);
-    this.dial.position.set(0, 0.23, 0.1);
-    this.dial.add(mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.08, 24), std('#1d1f21', 0.4)));
-    this.dial.add(mesh(new THREE.BoxGeometry(0.05, 0.03, 0.22), std('#ffffff', 0.4), [0, 0.05, -0.1]));
-    g.add(bumper, face, lcd, dialBase, this.dial);
-    // Jacks: black COM (left), red (right).
-    const jackBlack = mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.05, 16), std('#111', 0.4), [-0.25, 0.19, 0.7]);
-    const jackRed = mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.05, 16), std('#b3221a', 0.4), [0.25, 0.19, 0.7]);
-    g.add(jackBlack, jackRed);
+    // Yellow rubber holster around a dark face plate.
+    const bumper = mesh(new RoundedBoxGeometry(1.3, 0.3, 2.15, 4, 0.12), std('#f2b51f', 0.75), [0, 0, 0]);
+    const face = mesh(new RoundedBoxGeometry(1.08, 0.08, 1.95, 3, 0.04), std('#2c2f33', 0.5), [0, 0.13, 0]);
+    // Printed face: dial ring with mode names, socket labels, brand.
+    const facePrint = mesh(new THREE.PlaneGeometry(1.04, 1.9), new THREE.MeshStandardMaterial({ map: faceTexture(), roughness: 0.6, transparent: true }), [0, 0.172, 0], [-Math.PI / 2, 0, 0]);
+    // LCD with a bezel.
+    const bezel = mesh(new RoundedBoxGeometry(0.98, 0.04, 0.52, 2, 0.02), std('#1a1b1d', 0.4), [0, 0.18, -0.6]);
+    const lcd = mesh(new THREE.PlaneGeometry(0.9, 0.42), new THREE.MeshBasicMaterial({ map: this.tex, toneMapped: false }), [0, 0.202, -0.6], [-Math.PI / 2, 0, 0]);
+    // Rotary switch: a ridged knob with a white pointer.
+    this.dial.position.set(0, 0.2, 0.08);
+    this.dial.add(mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.08, 32), std('#1d1f21', 0.45)));
+    const grip = mesh(new THREE.BoxGeometry(0.1, 0.07, 0.46), std('#2a2c2f', 0.4), [0, 0.07, 0]);
+    this.dial.add(grip, mesh(new THREE.BoxGeometry(0.035, 0.012, 0.2), std('#f4f4f0', 0.3), [0, 0.11, -0.12]));
+    g.add(bumper, face, facePrint, bezel, lcd, this.dial);
+    // Sockets: 10A, COM (black lead) and VΩmA (red lead), each with a metal collar.
+    for (const [x, color] of [[-0.34, '#b3221a'], [0, '#111111'], [0.34, '#b3221a']] as const) {
+      g.add(mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.05, 20), std(color, 0.4), [x, 0.18, 0.72]));
+      g.add(mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.06, 12), std('#0a0a0a', 0.9), [x, 0.19, 0.72]));
+    }
     this.group.add(g);
     this.bodyGroup = g;
   }
@@ -114,14 +175,26 @@ export class Multimeter {
     for (const which of ['black', 'red'] as const) {
       const g = new THREE.Group();
       const color = which === 'red' ? '#c62b22' : '#1c1d1f';
-      // Probe lies roughly flat, tip pointing down/forward to the touched point.
-      const handle = mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.9, 16), std(color, 0.45), [0, 0.62, 0.32], [-0.6, 0, 0]);
-      const guard = mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 16), std(color, 0.45), [0, 0.32, 0.12], [-0.6, 0, 0]);
-      const tip = mesh(new THREE.CylinderGeometry(0.012, 0.025, 0.36, 8), M.steel(), [0, 0.13, 0.03], [-0.6, 0, 0]);
+      // The probe is built along its own axis, then tilted so the tip touches the point.
+      const body = new THREE.Group();
+      const handleMat = std(color, 0.5);
+      const lathe = (pts: [number, number][], m: THREE.Material) =>
+        new THREE.Mesh(new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), 20), m);
+      // Tapered, slightly waisted handle with a finger guard, from the guard (y = 0) up.
+      body.add(lathe([[0, 0.02], [0.105, 0.02], [0.105, 0.06], [0.06, 0.08], [0.065, 0.4], [0.058, 0.62], [0.07, 0.88], [0.068, 0.96], [0.055, 1.0], [0.03, 1.02], [0, 1.025]], handleMat));
+      // Cable boot at the top.
+      body.add(mesh(new THREE.CylinderGeometry(0.03, 0.045, 0.12, 12), std('#1a1a1a', 0.7), [0, 1.08, 0]));
+      for (let i = 0; i < 4; i++) body.add(mesh(new THREE.TorusGeometry(0.066, 0.008, 6, 20), std('#000000', 0.6, 0, { transparent: true, opacity: 0.25 }), [0, 0.2 + i * 0.06, 0], [Math.PI / 2, 0, 0]));
+      // Metal tip below the guard.
+      body.add(lathe([[0, -0.38], [0.008, -0.37], [0.018, -0.3], [0.022, 0.02], [0, 0.02]], M.steel()));
+      // Tilted towards the viewer; the tip (local y = −0.38) lands on the group origin.
+      body.rotation.x = PROBE_TILT;
+      body.scale.setScalar(PROBE_SCALE);
+      body.position.copy(new THREE.Vector3(0, 0.38 * PROBE_SCALE, 0).applyAxisAngle(new THREE.Vector3(1, 0, 0), PROBE_TILT));
       // Generous invisible grab volume for touch.
       const grab = mesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ visible: false }), [0, 0.45, 0.2]);
-      g.add(handle, guard, tip, grab);
-      const jackLocal = new THREE.Vector3(which === 'red' ? 0.25 : -0.25, 0.19, 0.7);
+      g.add(body, grab);
+      const jackLocal = new THREE.Vector3(which === 'red' ? 0.34 : 0, 0.19, 0.72);
       const park = new THREE.Vector3(which === 'red' ? 0.9 : -0.9, 0, 0.9).applyMatrix4(this.group.matrix);
       const cable = new THREE.Mesh(new THREE.BufferGeometry(), std(color, 0.6));
       this.parent.add(g, cable);
@@ -208,12 +281,16 @@ export class Multimeter {
     this.group.updateMatrixWorld(true);
     const jw = this.bodyGroup.localToWorld(p.jack.clone());
     const start = this.parent.worldToLocal(jw);
-    const end = p.g.position.clone().add(new THREE.Vector3(0, 0.95, 0.6));
-    const mid = start.clone().lerp(end, 0.5);
-    mid.y = Math.min(start.y, end.y) - 0.1;
-    const curve = new THREE.CatmullRomCurve3([start, start.clone().add(new THREE.Vector3(0, 0.1, 0.25)), mid, end]);
+    const end = p.g.position.clone().add(new THREE.Vector3(0, 1.52 * PROBE_SCALE, 0).applyAxisAngle(new THREE.Vector3(1, 0, 0), PROBE_TILT));
+    // Cables droop under their own weight, close to the bench between the two ends.
+    const droop = (t: number) => {
+      const q = start.clone().lerp(end, t);
+      q.y = Math.max(0.03, q.y - Math.sin(t * Math.PI) * (0.25 + start.distanceTo(end) * 0.12));
+      return q;
+    };
+    const curve = new THREE.CatmullRomCurve3([start, start.clone().add(new THREE.Vector3(0, 0.12, 0.2)), droop(0.3), droop(0.55), droop(0.8), end]);
     p.cable.geometry.dispose();
-    p.cable.geometry = new THREE.TubeGeometry(curve, 40, 0.025, 6, false);
+    p.cable.geometry = new THREE.TubeGeometry(curve, 64, 0.022, 8, false);
   }
 
   // ------------------------------------------------------------ behaviour
@@ -228,8 +305,8 @@ export class Multimeter {
 
   setMode(m: MeterMode) {
     this.mode = m;
-    const idx = (['V', 'A', 'OHM', 'BEEP'] as MeterMode[]).indexOf(m);
-    this.dial.rotation.y = -idx * 0.7 + 0.9;
+    // Point the knob at the mode's printed label (see faceTexture).
+    this.dial.rotation.y = -DIAL_ANGLE[m];
     this.modeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
     this.onChange?.();
   }

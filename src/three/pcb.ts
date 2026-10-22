@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { M, mesh, std, chipPassive, sot23, smdLed, isShared } from './lib';
+import { M, mesh, std, chipPassive, sot23, smdLed, isShared, marking, smdCode } from './lib';
 import { nightlightDesign, PLACEMENT, BOARD, type NightLightOpts } from '../content/nightlight';
 import type { Design } from '../sim/drc';
 
@@ -295,11 +295,14 @@ export class PcbBoard {
 // --------------------------------------------------------- part models
 const body = (w: number, h: number, d: number, color = '#1d1f21') => mesh(new THREE.BoxGeometry(w * S, h * S, d * S), std(color, 0.5));
 
-export function soic8(): THREE.Group {
+export function soic8(mark: string[] = ['ATTINY85', '20SU 2541']): THREE.Group {
   const g = new THREE.Group();
   const b = body(4.9, 1.5, 3.9);
   b.position.y = (1.5 * S) / 2 + 0.01;
   g.add(b);
+  const t = marking(4.0 * S, 2.6 * S, mark);
+  t.position.y = 1.5 * S + 0.011;
+  g.add(t);
   const dot = mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.005, 12), std('#555', 0.5), [-1.8 * S, 1.5 * S + 0.012, -1.3 * S]);
   g.add(dot);
   for (let i = 0; i < 4; i++) {
@@ -413,15 +416,15 @@ export function nightLight(o: NightLightBuildOpts = {}): NightLight {
       c1.position.add(new THREE.Vector3(0.12, 0, 0.1));
       c1.rotation.y = 0.5;
     }
-    if (!o.noR1) place('R1', chipPassive(0.2, 0.125, 'R'), ...at('R1'));
+    if (!o.noR1) place('R1', chipPassive(0.2, 0.125, 'R', smdCode(10000)), ...at('R1'));
     const sw = tactSmd();
     place('SW1', sw.group, ...at('SW1'));
     button = sw;
-    place('R2', chipPassive(0.2, 0.125, 'R'), ...at('R2'));
+    place('R2', chipPassive(0.2, 0.125, 'R', smdCode(220)), ...at('R2'));
     const d1 = smdLed('#ff3020');
     place('D1', d1.group, ...at('D1'));
     led = d1.lens;
-    place('Q1', sot23(), ...at('Q1'));
+    place('Q1', sot23('A09T'), ...at('Q1'));
   }
 
   const nets: Record<string, string[]> = {};

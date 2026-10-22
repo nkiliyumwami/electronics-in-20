@@ -33,7 +33,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   stage.part(res.group, { name: 'Resistor, 330 Ω', job: 'Limits the current through the LED.', symbol: 'resistor' });
   const ledObj = led('red', 0.254);
   ledObj.group.position.copy(H(7, 2).lerp(H(6, 2), 0.5));
-  ledObj.group.rotation.y = Math.PI; // anode (+, long leg) on column 7
+  ledObj.group.rotation.y = Math.PI; // anode (+, long leg) on column 8
   stage.real.add(ledObj.group);
   stage.part(ledObj.group, { name: 'LED', job: 'Lights when current flows through it.', symbol: 'led' });
   const fz = b.plus.z;
@@ -95,10 +95,10 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   // ---- meter for the hunt
   const points = () => [
     { id: 'w1a', label: 'Red wire: fuse end', node: 'f', pos: fuseR.clone().setY(-0.55) },
-    { id: 'w1b', label: 'Red wire: board end (col 13)', node: 'a', pos: H(13, 1) },
-    { id: 'w2a', label: 'Yellow wire: col 9 end', node: 'r', pos: H(9, 3) },
-    { id: 'w2b', label: 'Yellow wire: col 7 end', node: 'la', pos: H(7, 3) },
-    { id: 'w3a', label: 'Black wire: board end (col 6)', node: 'c', pos: H(6, 1) },
+    { id: 'w1b', label: 'Red wire: board end (col 14)', node: 'a', pos: H(13, 1) },
+    { id: 'w2a', label: 'Yellow wire: col 10 end', node: 'r', pos: H(9, 3) },
+    { id: 'w2b', label: 'Yellow wire: col 8 end', node: 'la', pos: H(7, 3) },
+    { id: 'w3a', label: 'Black wire: board end (col 7)', node: 'c', pos: H(6, 1) },
     { id: 'w3b', label: 'Black wire: battery end', node: 'bm', pos: b.minus.clone().add(new THREE.Vector3(-0.05, 0, 0)) },
   ];
   const meter = new Multimeter(stage, stage.real, points(), { modes: ['V', 'BEEP'], mode: 'BEEP', at: new THREE.Vector3(3.9, -0.85, 1.4), rotY: -0.5, probeY: 0 });

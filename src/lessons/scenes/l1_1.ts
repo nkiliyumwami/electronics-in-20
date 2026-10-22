@@ -54,8 +54,8 @@ export default function scene(ctx: SceneCtx): SceneHandle {
     stage.real,
     [
       { id: 'bp', label: 'Battery + terminal', node: 'top', pos: b.plus.clone().add(new THREE.Vector3(0.05, 0, 0)) },
-      { id: 'c11', label: 'Board, column 11 (right of resistor)', node: 'top', pos: H(11, 4) },
-      { id: 'c5', label: 'Board, column 5 (left of resistor)', node: 'gnd', pos: H(5, 4) },
+      { id: 'c11', label: 'Board, column 12 (right of resistor)', node: 'top', pos: H(11, 4) },
+      { id: 'c5', label: 'Board, column 6 (left of resistor)', node: 'gnd', pos: H(5, 4) },
       { id: 'bm', label: 'Battery − terminal', node: 'gnd', pos: b.minus.clone().add(new THREE.Vector3(-0.05, 0, 0)) },
     ],
     { modes: ['V'], at: new THREE.Vector3(3.9, -0.85, 1.3), rotY: -0.5, probeY: 0 },

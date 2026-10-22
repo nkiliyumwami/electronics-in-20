@@ -32,10 +32,10 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   const H = b.bb.hole;
   stage.label('3.3 V', b.batGroup, new THREE.Vector3(0.1, 2.15, 0), 'big');
   b.bat.setVoltage(3.3, 5);
-  const chip = dip(8);
+  const chip = dip(8, ['ATTINY85', '20PU']);
   chip.group.position.copy(H(4, 4).lerp(H(4, 5), 0.5)).add(new THREE.Vector3(0.381, 0, 0));
   stage.real.add(chip.group);
-  stage.part(chip.group, { name: 'Microcontroller', job: 'Reads its input pin (the leg in column 4) and counts presses.', symbol: 'chip' });
+  stage.part(chip.group, { name: 'Microcontroller', job: 'Reads its input pin (the leg in column 5) and counts presses.', symbol: 'chip' });
   const btn = button();
   btn.group.position.copy(H(12, 4).lerp(H(12, 5), 0.5)).add(new THREE.Vector3(0.127, 0, 0));
   stage.real.add(btn.group);

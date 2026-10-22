@@ -44,7 +44,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   stage.part(res.group, { name: 'Resistor (the narrow pipe)', job: 'Limits how fast charge can flow into the capacitor.', symbol: 'resistor' });
   const cap = electrolyticCap(0.9, 0.32);
   cap.group.position.copy(H(10, 3).lerp(H(9, 3), 0.5));
-  cap.group.rotation.y = Math.PI; // + leg on column 10, stripe (−) on column 9
+  cap.group.rotation.y = Math.PI; // + leg on column 11, stripe (−) on column 10
   stage.real.add(cap.group);
   stage.part(cap.group, {
     name: 'Electrolytic capacitor',
@@ -52,7 +52,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
     symbol: 'electrolytic',
     actions: () => [{ label: reversed ? 'Fit it the right way round' : 'Fit it backwards', run: () => setReversed(!reversed) }],
   });
-  // Slide switch on columns 14–16.
+  // Slide switch on columns 15–17.
   const swBody = mesh(new THREE.BoxGeometry(0.85, 0.3, 0.32), std('#2f3237', 0.5), [H(15, 2).x, 0.2, H(15, 2).z]);
   const knob = mesh(new THREE.BoxGeometry(0.16, 0.18, 0.16), std('#e6e2d6', 0.5), [H(15, 2).x, 0.42, H(15, 2).z]);
   stage.real.add(swBody, knob);

@@ -97,6 +97,8 @@ A scene returns `{ check(task) → { ok, msg? } }`. The quiz calls `check` with 
 - `stage.frame({ dir, pad, objects, animate })`: fits the camera to the content. `stage.focusObjects = [...]` limits what the real view frames. `stage.focus(obj, distance)` flies to one object, and "⟲ View" resets.
 - `stage.onUpdate((dt, t) => …)`: per-frame callback. It also runs on the no-WebGL fallback.
 - No WebGL (or `?nowebgl`): the stage shows a diagram built from the registered parts, and all panel controls keep working.
+- Quality: `HIGH_QUALITY` (desktops and laptops, or forced with `?hq`) turns on soft real-time shadows from the key light, plus a shadow-catching floor fitted to the content. Touch devices (or `?lowq`) keep the cheap blob shadows. Solid meshes cast shadows automatically; set `userData.noShadow` to opt out.
+- `?debug` exposes the stage as `window.__stage`. `node scripts/closeup.mjs <route> <camera x,y,z> <target x,y,z> <name>` uses it to take close-up screenshots.
 
 ## Control panel (`core/panel.ts`)
 
@@ -109,11 +111,12 @@ A scene returns `{ check(task) → { ok, msg? } }`. The quiz calls `check` with 
 | `resistor(ohms, span)` | Correct 4/5-band colour code; `setValue`, `setHeat(0..1)`, `setBurnt`. Always pair it with a text label for the value. |
 | `led(color, span)` | 5 mm; anode (long leg) at −X; `setLight(0..1.5)`, `setDead`, `flip`. `LED_COLORS` holds the forward voltages. |
 | `battery()` | Lying cell with a **pressure gauge** (`setVoltage(v, vmax)`); `plus`/`minus` tip positions. |
-| `breadboard(cols, rails)` | `hole(col, row)`; rows 0–4 = a–e, 5–9 = f–j. Use 17 columns without rails for the mini board. |
+| `breadboard(cols, rails)` | `hole(col, row)`; rows 0–4 = a–e, 5–9 = f–j. Use 17 columns without rails for the mini board. The printed top shows row letters and column numbers. **`col` is 0-based but the board prints `col + 1`**, so any text that names a column must use the printed number. |
 | `wire(points, color)` / `roundedPath` | Insulated jumper; `setGlow` for shorts. |
 | `ceramicCap()`, `electrolyticCap()` | The electrolytic has a stripe on −, `setPop(0..1)` and `flip`. |
 | `mosfetTO220()`, `sot23()`, `chipPassive(l, w, 'R'/'C')`, `smdLed()`, `qfp()`, `dip()` | Packages at true size (0805 = 0.2 × 0.125 units). |
 | `button()`, `motor()`, `bulb()`, `fuse()`, `smallBoard()`, `headerPin()`, `contactShadow()`, `arrow()` | Misc. |
+| `marking(w, d, lines, color?)`, `smdCode(ohms)` | Printed or laser-etched text on package tops ("ATTINY85", "A09T"), and SMD resistor codes (10 kΩ → "103"). `qfp`, `dip`, `sot23`, `chipPassive`, `mosfetTO220` and `soic8` take a marking argument. |
 | `M.*` materials, `setHeat`, `setHeatMap`, `glowSprite` | Shared materials are never disposed. **Clone a material before changing its colour.** |
 
 **Water kit (`three/water.ts`):** `pipe`, `gauge`, `pump` (`setPressure`, `spin`), `narrowing` (`setNarrow`, `setHeat`), `tank` (`setLevel`), `checkValve` (`setOpen`), `tapValve` (a tap with a small hand). `lessons/kit.ts → waterLoop()` builds the standard pump–pipe–narrowing loop.

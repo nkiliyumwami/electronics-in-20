@@ -40,7 +40,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   let ledObj = led(color, 0.254);
   const ledHolder = new THREE.Group();
   ledHolder.position.copy(H(9, 3).lerp(H(8, 3), 0.5));
-  ledHolder.rotation.y = Math.PI; // anode on column 9
+  ledHolder.rotation.y = Math.PI; // anode on column 10
   stage.real.add(ledHolder);
   ledHolder.add(ledObj.group);
   stage.part(ledHolder, {

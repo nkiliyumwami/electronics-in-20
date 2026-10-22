@@ -21,7 +21,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   stage.part(res.group, { name: 'Resistor, 220 Ω', job: 'Limits the current so the LED does not burn out.', symbol: 'resistor' });
   const ledObj = led('red', 0.254);
   ledObj.group.position.copy(H(7, 2).lerp(H(6, 2), 0.5));
-  ledObj.group.rotation.y = Math.PI; // anode (+, long leg) on column 7
+  ledObj.group.rotation.y = Math.PI; // anode (+, long leg) on column 8
   stage.real.add(ledObj.group);
   stage.part(ledObj.group, { name: 'LED (red)', job: 'Lights up when current flows through it the right way. Its long leg (+) is on the left.', symbol: 'led' });
   const redPts = batteryPts(b.plus, 1, H(13, 0), 0.9);
@@ -87,10 +87,10 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   // ---- meter
   const points = () => [
     { id: 'bp', label: 'Battery +', node: connected ? 'top' : 'bplus', pos: b.plus.clone().add(new THREE.Vector3(0.05, 0, 0)) },
-    { id: 'c13', label: 'Resistor right leg (column 13)', node: 'top', pos: H(13, 3) },
-    { id: 'c9', label: 'Resistor left leg (column 9)', node: 'rL', pos: H(9, 3) },
-    { id: 'c7', label: 'LED + leg (column 7)', node: 'ledA', pos: H(7, 3) },
-    { id: 'c6', label: 'LED − leg (column 6)', node: 'gnd', pos: H(6, 3) },
+    { id: 'c13', label: 'Resistor right leg (column 14)', node: 'top', pos: H(13, 3) },
+    { id: 'c9', label: 'Resistor left leg (column 10)', node: 'rL', pos: H(9, 3) },
+    { id: 'c7', label: 'LED + leg (column 8)', node: 'ledA', pos: H(7, 3) },
+    { id: 'c6', label: 'LED − leg (column 7)', node: 'gnd', pos: H(6, 3) },
     { id: 'bm', label: 'Battery −', node: connected ? 'gnd' : 'bminus', pos: b.minus.clone().add(new THREE.Vector3(-0.05, 0, 0)) },
   ];
   const meter = new Multimeter(stage, stage.real, points(), { modes: ['V', 'A', 'OHM'], at: new THREE.Vector3(3.9, -0.85, 1.3), rotY: -0.5, probeY: 0 });
@@ -194,7 +194,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
       if (!connected) return { ok: false, msg: 'Reconnect the battery so current flows.' };
       if (meter.mode !== 'A') return { ok: false, msg: 'The dial is not on amps yet.' };
       if (!broken) return { ok: false, msg: 'The circuit is still closed. Break it first, so the current has to go through the meter.' };
-      if (!bridgesGap()) return { ok: false, msg: 'The probes are not on the two sides of the gap (columns 9 and 7).' };
+      if (!bridgesGap()) return { ok: false, msg: 'The probes are not on the two sides of the gap (columns 10 and 8).' };
       if (Math.abs(meter.value) > 0.005) return { ok: true };
       return { ok: false, msg: `The meter shows ${meter.text}.` };
     },

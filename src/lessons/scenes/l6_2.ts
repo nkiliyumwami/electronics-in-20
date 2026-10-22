@@ -98,8 +98,8 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   tray.position.set(0, 0, 7.2);
   stage.real.add(tray, mesh(new THREE.BoxGeometry(12, 0.1, 2.6), new THREE.MeshStandardMaterial({ color: '#d9d4c7', roughness: 0.8 }), [0, -0.06, 7.2]));
   const models: Record<PartId, THREE.Object3D> = {
-    R: chipPassive(0.2, 0.125, 'R'),
-    Q: sot23(),
+    R: chipPassive(0.2, 0.125, 'R', '103'),
+    Q: sot23('A09T'),
     LED: led('red', 0.254).group,
     J: jst2(2.0),
   };

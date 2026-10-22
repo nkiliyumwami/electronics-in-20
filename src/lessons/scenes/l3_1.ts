@@ -46,9 +46,9 @@ export default function scene(ctx: SceneCtx): SceneHandle {
     stage,
     stage.real,
     [
-      { id: 'mid', label: 'Middle point (column 9)', node: 'mid', pos: H(9, 4) },
-      { id: 'gnd', label: 'Bottom / ground (column 5)', node: 'gnd', pos: H(5, 4) },
-      { id: 'top', label: 'Top / input (column 13)', node: 'top', pos: H(13, 4) },
+      { id: 'mid', label: 'Middle point (column 10)', node: 'mid', pos: H(9, 4) },
+      { id: 'gnd', label: 'Bottom / ground (column 6)', node: 'gnd', pos: H(5, 4) },
+      { id: 'top', label: 'Top / input (column 14)', node: 'top', pos: H(13, 4) },
     ],
     { modes: ['V'], at: new THREE.Vector3(3.9, -0.85, 1.4), rotY: -0.5, probeY: 0 },
   );

@@ -36,6 +36,18 @@ interface Draggable {
 }
 
 let sharedRenderer: THREE.WebGLRenderer | null | undefined;
+
+/**
+ * Rendering quality. Desktops and laptops get soft real-time shadows; touch
+ * devices (phones, tablets) keep the cheap blob shadows to hold 60 fps.
+ * Override with ?hq or ?lowq.
+ */
+export const HIGH_QUALITY = (() => {
+  const q = new URLSearchParams(location.search);
+  if (q.has('hq')) return true;
+  if (q.has('lowq')) return false;
+  return !(window.matchMedia?.('(pointer: coarse)').matches ?? false);
+})();
 let sharedEnv: THREE.Texture | null = null;
 
 function getRenderer(): THREE.WebGLRenderer | null {
@@ -47,6 +59,10 @@ function getRenderer(): THREE.WebGLRenderer | null {
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.toneMapping = THREE.ACESFilmicToneMapping;
     r.toneMappingExposure = 0.95;
+    if (HIGH_QUALITY) {
+      r.shadowMap.enabled = true;
+      r.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
     const pm = new THREE.PMREMGenerator(r);
     sharedEnv = pm.fromScene(new RoomEnvironment(), 0.04).texture;
     pm.dispose();
@@ -109,10 +125,24 @@ export class Stage {
     this.water.visible = false;
 
     // Lighting: soft hemisphere + a key light; the room environment gives metals life.
-    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f8a, 1.1));
-    const key = new THREE.DirectionalLight(0xffffff, 1.6);
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f8a, HIGH_QUALITY ? 1.0 : 1.1));
+    const key = new THREE.DirectionalLight(0xffffff, HIGH_QUALITY ? 1.9 : 1.6);
     key.position.set(4, 10, 6);
-    this.scene.add(key);
+    this.scene.add(key, key.target);
+    this.key = key;
+    if (HIGH_QUALITY) {
+      key.castShadow = true;
+      key.shadow.mapSize.set(2048, 2048);
+      key.shadow.bias = -0.0003;
+      key.shadow.normalBias = 0.02;
+      key.shadow.radius = 4;
+      // An invisible floor that only shows shadows.
+      this.floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.ShadowMaterial({ opacity: 0.22 }));
+      this.floor.rotation.x = -Math.PI / 2;
+      this.floor.receiveShadow = true;
+      this.floor.userData.noFrame = true;
+      this.scene.add(this.floor);
+    }
     if (sharedEnv) this.scene.environment = sharedEnv;
 
     if (this.renderer) {
@@ -149,6 +179,9 @@ export class Stage {
       h('button', { class: 'iconbtn', type: 'button', 'aria-label': 'Reset camera', title: 'Reset camera', onclick: () => this.resetCamera() }, '⟲ View'),
     );
     this.el.append(tools);
+
+    // ?debug exposes the stage for scripted close-up screenshots.
+    if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __stage: Stage }).__stage = this;
 
     this.resizeObs = new ResizeObserver(() => this.resize());
     this.resizeObs.observe(this.el);
@@ -196,6 +229,8 @@ export class Stage {
     const dt = Math.min(0.05, this.clock.getDelta());
     this.elapsed += dt;
     for (const u of this.updaters) u(dt, this.elapsed);
+    // Scenes add and rebuild objects over time; refresh shadow flags twice a second.
+    if (HIGH_QUALITY && ++this.shadowTick % 30 === 0) this.applyShadows();
     if (this.camAnim && this.controls) {
       const a = this.camAnim;
       a.t = Math.min(1, a.t + dt / 0.6);
@@ -242,6 +277,8 @@ export class Stage {
       if (!this.hasWater) for (const o of this.root.children) if (o !== this.real && o !== this.water) box.union(contentBox(o));
     }
     if (box.isEmpty()) box.set(new THREE.Vector3(-1, -1, -1), new THREE.Vector3(1, 1, 1));
+    this.applyShadows();
+    this.fitShadows(opts.objects ? box : contentBox(this.root));
     const center = box.getCenter(new THREE.Vector3());
     const dir = (opts.dir ?? this.homeDir).clone().normalize();
     this.homeDir = dir.clone();
@@ -274,6 +311,42 @@ export class Stage {
     }
   }
   private homeDir = new THREE.Vector3(0, 0.75, 1);
+  private key!: THREE.DirectionalLight;
+  private floor: THREE.Mesh | null = null;
+  private shadowTick = 0;
+
+  /** Let solid meshes cast and receive shadows (runs again as scenes change). */
+  private applyShadows() {
+    if (!HIGH_QUALITY) return;
+    this.root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || (o as THREE.InstancedMesh).isInstancedMesh || o.userData.noShadow) return;
+      const mat = m.material as THREE.Material;
+      const solid = !Array.isArray(mat) && !(mat.transparent && mat.opacity < 0.95) && !(mat as THREE.MeshBasicMaterial).isMeshBasicMaterial;
+      m.castShadow = solid;
+      m.receiveShadow = !(mat as THREE.MeshBasicMaterial).isMeshBasicMaterial;
+    });
+    // Blob shadows are redundant when real shadows are on.
+    this.root.traverse((o) => {
+      if (o.userData.blobShadow) o.visible = false;
+    });
+  }
+
+  /** Aim the shadow camera at the content and put the floor under it. */
+  private fitShadows(box: THREE.Box3) {
+    if (!HIGH_QUALITY || box.isEmpty()) return;
+    const c = box.getCenter(new THREE.Vector3());
+    const r = Math.max(2, box.getSize(new THREE.Vector3()).length() / 2);
+    this.key.target.position.copy(c);
+    this.key.position.copy(c).add(new THREE.Vector3(0.45, 1, 0.6).normalize().multiplyScalar(r * 3));
+    const cam = this.key.shadow.camera;
+    cam.left = cam.bottom = -r * 1.2;
+    cam.right = cam.top = r * 1.2;
+    cam.near = 0.1;
+    cam.far = r * 6;
+    cam.updateProjectionMatrix();
+    if (this.floor) this.floor.position.y = box.min.y - 0.005;
+  }
   /** Objects the camera frames in the real view (default: everything). */
   focusObjects: THREE.Object3D[] | null = null;
 
