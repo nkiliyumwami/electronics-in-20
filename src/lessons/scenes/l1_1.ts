@@ -9,7 +9,7 @@ import { Multimeter } from '../../tools/multimeter';
 
 export default function scene(ctx: SceneCtx): SceneHandle {
   const { stage, panel } = ctx;
-  let V = 5;
+  let V = 3.3;
   let R = 1000;
 
   // ---- real view
@@ -64,7 +64,8 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   meter.setProbe('black', 'c5');
 
   // ---- controls
-  panel.slider({ label: 'Battery voltage (pressure)', min: 0, max: 12, step: 0.1, value: V, nudge: true, format: (v) => `${v.toFixed(1)} V`, onInput: (v) => { V = v; solve(); } });
+  panel.slider({ label: 'Supply voltage (pressure)', min: 0, max: 5, step: 0.1, value: V, nudge: true, format: (v) => `${v.toFixed(1)} V`, onInput: (v) => { V = v; solve(); } });
+  panel.note('For reference: an ESP32 pin gives 3.3 V, USB gives 5 V.');
   panel.slider({
     label: 'Resistor (narrowness)', min: 680, max: 10000, log: true, value: R, nudge: true, snap: (v) => roundSig(v, 2), format: (v) => fmt(v, 'Ω'),
     onInput: (v) => { R = v; res.setValue(R); solve(); },
@@ -84,12 +85,12 @@ export default function scene(ctx: SceneCtx): SceneHandle {
     ]).dc();
     I = sol.i('R');
     meter.read(sol, true);
-    b.bat.setVoltage(V, 12);
-    w.pump.setPressure(V / 12);
+    b.bat.setVoltage(V, 5);
+    w.pump.setPressure(V / 5);
     w.narrowing.setNarrow(Math.log(R / 680) / Math.log(10000 / 680) * 0.8 + 0.1);
-    flow.speed = currentToSpeed(I, 0.004, 5);
+    flow.speed = currentToSpeed(I, 0.0015, 5);
     w.flow.speed = flow.speed;
-    vLabel.set(`${V.toFixed(1)} V`);
+    vLabel.set(`${V.toFixed(1)} V${Math.abs(V - 3.3) < 0.05 ? ' (like an ESP32 pin)' : Math.abs(V - 5) < 0.05 ? ' (like USB)' : ''}`);
     rLabel.set(fmt(R, 'Ω'));
     iLabel.set(`I = ${fmt(I, 'A')}`);
     pLabel.set(`Pressure ${V.toFixed(1)}`);
@@ -114,7 +115,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   return {
     check(task) {
       if (task !== 'zeroVolts') return { ok: false };
-      if (V < 1) return { ok: false, msg: 'Turn the battery up above 1 V first, so there is a real push in the circuit.' };
+      if (V < 1) return { ok: false, msg: 'Turn the supply up above 1 V first, so there is a real push in the circuit.' };
       if (!meter.red || !meter.black) return { ok: false, msg: 'Place both probes first.' };
       if (Math.abs(meter.value) < 0.01) return { ok: true };
       return { ok: false, msg: `The meter shows ${meter.text}. Right now the probes are on opposite sides of the resistor.` };

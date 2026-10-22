@@ -30,7 +30,7 @@ function sentences(s: string): number {
 const PREFIX: Record<string, number> = { p: 1e-12, n: 1e-9, 'µ': 1e-6, u: 1e-6, m: 1e-3, '': 1, k: 1e3, M: 1e6, G: 1e9 };
 /** Parse "5 mA", "0.2 mA", "250 Ω", "1 kΩ", "3.5 W" into SI. Returns null if no unit. */
 export function parseSI(text: string): { value: number; unit: string } | null {
-  const m = text.replace(',', '').match(/(-?\d+(?:\.\d+)?)\s*(p|n|µ|u|m|k|M|G)?(A|V|W|Ω|F|Hz|s|h|°C|mm|mAh)\b/);
+  const m = text.replace(',', '').match(/(-?\d+(?:\.\d+)?)\s*(p|n|µ|u|m|k|M|G)?(A|V|W|Ω|F|Hz|s|h|°C|mm|mAh)(?![A-Za-z])/);
   if (!m) return null;
   if (m[3] === 'mm' || m[3] === 'mAh' || m[3] === '°C' || m[3] === 'h') return { value: Number(m[1]), unit: m[3] };
   return { value: Number(m[1]) * PREFIX[m[2] ?? ''], unit: m[3] };

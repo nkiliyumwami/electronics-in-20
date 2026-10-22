@@ -411,8 +411,8 @@ export class Stage {
   }
 
   // ------------------------------------------------------- water ⇄ real
-  /** Enable the water twin. Content goes into `this.real` and `this.water`. */
-  enableWater(gap = 1.5) {
+  /** Enable the water twin. Content goes into `this.real` and `this.water`. Wide scenes can start in 'real'. */
+  enableWater(gap = 1.5, start?: ViewMode) {
     this.hasWater = true;
     this.twinGap = gap;
     const seg = h('div', { class: 'viewseg', role: 'group', 'aria-label': 'Water view or real view' });
@@ -429,7 +429,7 @@ export class Stage {
     this.viewSeg = seg;
     this.el.append(seg);
     // Wide screens start side by side; phones start with the real view.
-    this.setView(this.el.clientWidth >= 640 ? 'both' : 'real', false);
+    this.setView(start ?? (this.el.clientWidth >= 640 ? 'both' : 'real'), false);
   }
 
   setView(m: ViewMode, animate = true) {

@@ -7,9 +7,7 @@
 //   allowed – every number allowed to appear in the question's texts
 //   extra   – any other claim in the texts, checked as code
 import { Circuit } from '../src/sim/solver.ts';
-import { nearestE12, traceRise, traceWidthFor } from '../src/sim/physics.ts';
-
-const par = (a: number, b: number) => 1 / (1 / a + 1 / b);
+import { E12 } from '../src/sim/physics.ts';
 
 export interface Spec {
   answer?: number;
@@ -22,305 +20,241 @@ export interface Spec {
 const r1 = (x: number) => Math.round(x * 10) / 10;
 const r2 = (x: number) => Math.round(x * 100) / 100;
 const eq = (a: number, b: number, what: string): true | string => (Math.abs(a - b) <= Math.abs(b) * 1e-6 + 1e-12 ? true : `${what}: ${a} ≠ ${b}`);
+const mA = (a: number) => a * 1000;
+
+// ESP32 facts the questions rely on.
+const PIN = 3.3; // V, a HIGH output
+const RED = 2.0; // V, red LED forward voltage
+const PIN_MAX_MA = 40; // absolute maximum per pin
+const DESIGN_MA = 20; // design limit per pin, and the LED's rating
+const ABS_MAX = 3.6; // V on any pin
 
 export const CHECKS: Record<string, Spec> = {};
 
 // ============================================================ Module 1
-CHECKS['1.1/q1'] = { allowed: [3.3] };
+CHECKS['1.1/q1'] = {
+  allowed: [PIN, 0, 5, 1.7],
+  extra: [{ name: '3V3 is 1.7 V below 5 V', check: () => eq(r1(5 - PIN), 1.7, '5 − 3.3') }],
+};
 CHECKS['1.1/q3'] = { allowed: [0, 1] };
-CHECKS['1.3/q2'] = { allowed: [0] };
-
 {
-  // 1.2 q1: 5 V across 1 kΩ.
-  const V = 5, R = 1000;
+  // 1.2 q1: 3.3 V pin, red LED, 330 Ω.
+  const VR = PIN - RED;
+  const R = 330;
   CHECKS['1.2/q1'] = {
-    answer: V / R,
-    choices: {
-      '5 A': V / 1, // forgot the k
-      '5 mA': V / R, // correct
-      '0.2 mA': (1 / V) * 1e-3, // 1 ÷ 5 with R in kΩ, read as mA
-      '200 mA': (R / V) * 1e-3, // R ÷ V = 200, read as mA
-    },
-    allowed: [V, 1, R, V / R, (V / R) * 1000, 1 / V, R / V],
-  };
-}
-{
-  // 1.2 q2: 5 V and 100 mA.
-  const V = 5, I = 0.1, P = V * I;
-  CHECKS['1.2/q2'] = {
-    answer: P,
+    answer: VR / R,
     traps: {
-      '500': P * 1000, // answered in mW but the unit box says W
-      '0.0005': P * 1e-3, // typed 0.5 with the unit box on mW
+      '0.01': PIN / R, // used the full 3.3 V
+      [String(2 / 330)]: RED / R, // used the LED's voltage
+      '0.254': R / VR / 1000, // R ÷ V, typed in mA
+      '254': R / VR, // R ÷ V, typed in A
     },
-    allowed: [V, 100, I, P, P * 1000, 0.25],
-    extra: [{ name: '"double what a ¼ W resistor can take"', check: () => eq(P / 0.25, 2, 'ratio') }],
+    allowed: [PIN, RED, R, r1(VR), r1(mA(VR / R))],
+    extra: [{ name: '"≈ 3.9 mA"', check: () => eq(r1(mA(VR / R)), 3.9, 'I') }],
   };
 }
 {
-  // 1.2 q3: 5 V, 20 mA target.
-  const V = 5, I = 0.02, R = V / I;
-  const buy = nearestE12(R);
-  CHECKS['1.2/q3'] = {
-    allowed: [V, 20, I, R, buy, r1((V / buy) * 1000)],
+  // 1.2 q2: three LEDs at ~10 mA each.
+  const VR = PIN - RED;
+  const ideal = VR / 0.01;
+  const decades = [10, 100, 1000];
+  const std = decades.flatMap((d) => E12.map((x) => Math.round(x * d)));
+  const pick = Math.min(...std.filter((x) => x >= ideal - 1e-9));
+  CHECKS['1.2/q2'] = {
+    answer: pick,
+    choices: {
+      '150 Ω': pick, // nearest standard value at or above the ideal
+      '33 Ω': 33, // ~39 mA
+      '330 Ω': 330, // ~3.9 mA
+      '1.3 kΩ': VR / 0.001, // 1.3 V ÷ 1 mA: slipped decimal
+    },
+    allowed: [3, RED, 10, PIN, r1(VR), ideal, pick, r1(mA(VR / pick)), 33, Math.round(mA(VR / 33)), PIN_MAX_MA, DESIGN_MA, 330, r1(mA(VR / 330)), 1, r1(mA(VR / 1300))],
     extra: [
-      { name: '250 Ω', check: () => eq(R, 250, 'R') },
-      { name: 'nearest standard value 270 Ω', check: () => eq(buy, 270, 'E12') },
-      { name: '"about 18.5 mA"', check: () => eq(r1((V / buy) * 1000), 18.5, 'I with 270 Ω') },
+      { name: 'ideal 130 Ω', check: () => eq(Math.round(ideal), 130, 'ideal') },
+      { name: '150 Ω → 8.7 mA', check: () => eq(r1(mA(VR / 150)), 8.7, 'I') },
+      { name: '33 Ω → 39 mA, near the 40 mA max', check: () => eq(Math.round(mA(VR / 33)), 39, 'I') },
+      { name: '1.3 kΩ → 1.0 mA', check: () => eq(r1(mA(VR / 1300)), 1.0, 'I') },
     ],
   };
 }
 {
-  // 1.3 q3: scene values: 5 V battery, 220 Ω, red LED 2.0 V, meter shunt 0.5 Ω in the gap.
+  // 1.2 q3: 5–15 mA band.
+  const VR = PIN - RED;
+  const I = (r: number) => r1(mA(VR / r));
+  CHECKS['1.2/q3'] = {
+    allowed: [5, 15, 16, 220, I(220), 150, I(150), 100, I(100)],
+    extra: [
+      { name: '220 Ω → 5.9 mA', check: () => eq(I(220), 5.9, 'I') },
+      { name: '150 Ω → 8.7 mA', check: () => eq(I(150), 8.7, 'I') },
+      { name: '100 Ω → 13.0 mA', check: () => eq(I(100), 13.0, 'I') },
+      { name: 'all three in 5–15 mA, 330 Ω is not', check: () => ([220, 150, 100].every((r) => I(r) >= 5 && I(r) <= 15) && I(330) < 5 ? true : 'band') },
+    ],
+  };
+}
+{
+  // 1.3 q3: 3V3 → 220 Ω → red LED → GND, meter (0.5 Ω shunt) in the gap.
   const sol = new Circuit([
-    { kind: 'V', id: 'B', p: 'top', n: 'gnd', v: 5 },
-    { kind: 'R', id: 'R1', a: 'top', b: 'rL', r: 220 },
+    { kind: 'V', id: 'S', p: 'v33', n: 'gnd', v: PIN },
+    { kind: 'R', id: 'R1', a: 'v33', b: 'rL', r: 220 },
     { kind: 'R', id: 'meter', a: 'rL', b: 'ledA', r: 0.5 },
-    { kind: 'D', id: 'LED', a: 'ledA', k: 'gnd', vf: 2.0, rs: 0 },
+    { kind: 'D', id: 'LED', a: 'ledA', k: 'gnd', vf: RED, rs: 0 },
   ]).dc();
-  const mA = r1(sol.i('meter') * 1000);
+  const i = sol.i('meter');
   CHECKS['1.3/q3'] = {
-    allowed: [mA],
-    extra: [{ name: '"about 13.6 mA"', check: () => eq(mA, 13.6, 'meter reading') }],
+    allowed: [r1(mA(i)), PIN, RED, 220],
+    extra: [{ name: 'about 5.9 mA with the meter in', check: () => eq(r1(mA(i)), 5.9, 'I') }],
   };
 }
 
 // ============================================================ Module 2
-CHECKS['2.1/q1'] = { allowed: [0] };
-CHECKS['2.1/q2'] = { allowed: [0] };
-CHECKS['2.1/q3'] = { allowed: [0] };
-CHECKS['2.2/q1'] = { allowed: [0] };
 {
-  // 2.3 q1: two 1 kΩ in parallel.
-  const R = 1000;
-  const p2 = par(R, R);
-  CHECKS['2.3/q1'] = {
-    answer: p2,
-    traps: { '2000': R + R }, // added them as if in series
-    allowed: [1, p2],
-    extra: [{ name: '"half of 1 kΩ is 500 Ω"', check: () => eq(R / 2, p2, 'half') }],
-  };
-}
-{
-  // 2.3 q2: 470 Ω + 220 Ω in series.
-  const a = 470, b = 220;
-  const pp = par(a, b);
-  CHECKS['2.3/q2'] = {
-    answer: a + b,
-    traps: { '150': Math.round(pp / 10) * 10 }, // parallel value ≈ 149.9 Ω, trap matches within 1%
-    allowed: [a, b, a + b],
-    extra: [{ name: 'parallel 470‖220 ≈ 150 Ω (trap matches within 1%)', check: () => (Math.abs(pp - 150) / 150 < 0.01 ? true : `parallel = ${pp}`) }],
+  const a = 5, b = 6;
+  CHECKS['2.4/q1'] = { answer: (a + b) / 1000, traps: { '0.006': b / 1000 }, allowed: [a, b, a + b] };
+  CHECKS['2.4/q2'] = {
+    allowed: [RED, PIN, 2 * RED, 5],
+    extra: [
+      { name: '2.0 + 2.0 = 4.0 > 3.3', check: () => (2 * RED > PIN ? true : 'two LEDs fit') },
+      { name: 'two red LEDs fit under 5 V', check: () => (2 * RED < 5 ? true : 'not under 5 V') },
+    ],
   };
 }
 
 // ============================================================ Module 3
+CHECKS['3.1/q1'] = { allowed: [27, PIN] };
 {
-  // 3.1 q1: 10 V, R1 = 8 kΩ, R2 = 2 kΩ.
-  const Vin = 10, R1 = 8000, R2 = 2000;
-  const out = (Vin * R2) / (R1 + R2);
-  CHECKS['3.1/q1'] = {
-    answer: out,
-    traps: { '8': (Vin * R1) / (R1 + R2) }, // voltage across R1 instead
-    allowed: [Vin, 8, 2, out, 10],
-    extra: [{ name: '"a fifth of the total"', check: () => eq(R2 / (R1 + R2), 1 / 5, 'share') }],
-  };
-}
-{
-  // 3.1 q2: 10 kΩ / 10 kΩ divider with a 1 kΩ load.
-  const R = 10000, L = 1000;
-  const bottom = par(R, L);
-  const ratio = bottom / (R + bottom);
-  CHECKS['3.1/q2'] = {
-    allowed: [1, 10, Math.round(bottom)],
-    extra: [
-      { name: '"acts like about 909 Ω"', check: () => eq(Math.round(bottom), 909, 'R2‖load') },
-      { name: '"less than a tenth of the input"', check: () => (ratio < 0.1 ? true : `ratio ${ratio}`) },
-    ],
-  };
-}
-{
-  // 3.1 q3: 5 V → 3.3 V. Hint R1 = 1 kΩ, R2 = 2 kΩ.
-  const v = (5 * 2000) / 3000;
-  CHECKS['3.1/q3'] = {
-    allowed: [5, 3.3, 0.1, 1, 2, 3],
-    extra: [{ name: 'hint pair 1k/2k gives 3.3 ± 0.1 V', check: () => (Math.abs(v - 3.3) <= 0.1 ? true : `got ${v}`) }],
-  };
-}
-{
-  // 3.2 q1: 10 kΩ × 100 nF.
-  const R = 10000, C = 100e-9;
+  // 3.2 q1: 100 k / 47 k from 5 V.
+  const Vin = 5, R1 = 100e3, R2 = 47e3;
+  const v = (Vin * R2) / (R1 + R2);
   CHECKS['3.2/q1'] = {
-    answer: R * C,
-    traps: { '1': R * 100e-6 }, // used µ instead of n
-    allowed: [10, 100, R, C, R * C, 1, 63],
-    extra: [{ name: '"about 63% after one time constant"', check: () => eq(Math.round((1 - Math.exp(-1)) * 100), 63, '%') }],
+    answer: v,
+    traps: { [String((5 * 100) / 147)]: (Vin * R1) / (R1 + R2), '2.35': (Vin * R2) / R1 },
+    allowed: [100, 47, Vin, 147, r2(v)],
+    extra: [{ name: '"≈ 1.60 V"', check: () => eq(r2(v), 1.6, 'Vout') }],
   };
 }
-CHECKS['3.2/q2'] = { allowed: [63] };
-CHECKS['3.2/q3'] = {
-  allowed: [2, 63, 10, 20, 100],
-  extra: [
-    { name: '20 kΩ × 100 µF = 2 s', check: () => eq(20e3 * 100e-6, 2, 'tau') },
-    { name: '100 kΩ × 20 µF = 2 s', check: () => eq(100e3 * 20e-6, 2, 'tau') },
-  ],
-};
+CHECKS['3.2/q2'] = { allowed: [4, 32, 39, 5, PIN] };
 {
-  // 3.3 q1: 5 V, 2 V LED, 15 mA.
-  const Vs = 5, Vf = 2, I = 0.015;
-  const R = (Vs - Vf) / I;
-  const buy = nearestE12(R);
-  CHECKS['3.3/q1'] = {
-    answer: R,
-    traps: { '333.3': Math.round((Vs / I) * 10) / 10 }, // ignored the LED's voltage
-    allowed: [Vs, Vf, 15, I, R, buy, r1(((Vs - Vf) / buy) * 1000), Vs - Vf],
+  const full = 4.2;
+  const vOut = (r1k: number, r2k: number) => (full * r2k) / (r1k + r2k);
+  const uA = (r1k: number, r2k: number) => (full / ((r1k + r2k) * 1e3)) * 1e6;
+  CHECKS['3.2/q3'] = {
+    allowed: [full, 1.8, 2.5, 50, 100, r1(vOut(100, 100)), Math.round(uA(100, 100)), 10, Math.round(uA(10, 10))],
     extra: [
-      { name: 'nearest standard value 220 Ω', check: () => eq(buy, 220, 'E12') },
-      { name: '"about 13.6 mA"', check: () => eq(r1(((Vs - Vf) / buy) * 1000), 13.6, 'I') },
+      { name: '100k/100k → 2.1 V, 21 µA (passes)', check: () => (eq(r1(vOut(100, 100)), 2.1, 'V') === true && Math.round(uA(100, 100)) === 21 ? true : 'values') },
+      { name: '10k/10k → 210 µA (fails)', check: () => eq(Math.round(uA(10, 10)), 210, 'µA') },
     ],
   };
 }
-CHECKS['3.3/q3'] = { allowed: [10, 20, 0.015] };
 {
-  // 3.5 q1: VDD = 3.3 V, limit VDD + 0.3 V.
-  const lim = 3.3 + 0.3;
-  CHECKS['3.5/q1'] = { allowed: [3.3, 0.3, 5, lim], extra: [{ name: '3.3 + 0.3 = 3.6', check: () => eq(Math.round(lim * 10) / 10, 3.6, 'limit') }] };
-}
-// 3.5 q2: values come from the datasheet shown in the scene (DATASHEET in src/content/datasheet.ts).
-import { DATASHEET } from '../src/content/datasheet.ts';
-{
-  const abs = DATASHEET.absMax.find((r) => r.param === 'Current per I/O pin')!;
-  const rec = DATASHEET.operating.find((r) => r.param === 'Current per I/O pin')!;
-  CHECKS['3.5/q2'] = {
-    answer: abs.max * 1e-3,
-    traps: { '0.008': rec.max * 1e-3 }, // read the recommended table instead
-    allowed: [abs.max, rec.max],
+  const DRY = 2900, WET = 1300, now = 2300;
+  const pct = ((DRY - now) / (DRY - WET)) * 100;
+  CHECKS['3.3/q1'] = {
+    answer: pct,
+    traps: { '62.5': ((now - WET) / (DRY - WET)) * 100, [String((2300 / 4095) * 100)]: (now / 4095) * 100 },
+    allowed: [DRY, WET, now, 100, DRY - WET, pct, 4095],
   };
 }
-CHECKS['3.5/q3'] = { allowed: [5, 3.3] };
+CHECKS['3.3/q2'] = { allowed: [5] };
+CHECKS['3.3/q3'] = { allowed: [40, 60, 30] };
+{
+  const th = 0.75 * PIN;
+  CHECKS['3.4/q1'] = {
+    answer: th,
+    traps: { [String(0.75 * 5)]: 0.75 * 5 },
+    allowed: [0.75, PIN, 2.475, 2.5, 5],
+    extra: [{ name: '"= 2.475 V, about 2.5 V"', check: () => eq(Math.round(th * 1000) / 1000, 2.475, 'threshold') }],
+  };
+}
+{
+  const Vin = 5, R1 = 1e3, R2 = 2e3;
+  const v = (Vin * R2) / (R1 + R2);
+  CHECKS['3.4/q2'] = {
+    answer: v,
+    choices: { '3.33 V': v, '1.67 V': (Vin * R1) / (R1 + R2), '2.5 V': Vin / 2, '5 V': Vin },
+    allowed: [Vin, 1, 2, 3, r2(v), ABS_MAX, r2((Vin * R1) / (R1 + R2)), 2.5],
+    extra: [{ name: '3.33 V is HIGH and under 3.6 V', check: () => (v > 0.75 * PIN && v < ABS_MAX ? true : 'not safe') }],
+  };
+  CHECKS['3.4/q3'] = { allowed: [ABS_MAX, Vin, r2(v)] };
+}
 
 // ============================================================ Module 4
 {
-  const hi = (vdd: number) => 0.7 * vdd;
-  const lo = (vdd: number) => 0.3 * vdd;
+  const d = 0.25;
+  const avg = d * PIN;
   CHECKS['4.1/q1'] = {
-    allowed: [3.3, 5, 0.7, hi(5)],
-    extra: [{ name: '0.7 × 5 = 3.5 V', check: () => eq(hi(5), 3.5, 'VIH(5 V)') }],
+    answer: avg,
+    traps: { [String(0.75 * 3.3)]: (1 - d) * PIN },
+    allowed: [25, PIN, d, r2(avg), 0, 75],
+    extra: [{ name: '"≈ 0.83 V"', check: () => eq(r2(avg), 0.83, 'avg') }],
   };
-  CHECKS['4.1/q2'] = {
-    answer: hi(3.3),
-    traps: { '0.99': lo(3.3) }, // used the LOW threshold
-    allowed: [3.3, 0.7, 0.3, hi(3.3), lo(3.3), 1],
-  };
-  CHECKS['4.1/q3'] = { allowed: [3.3, 5, hi(3.3), hi(5)] };
-  // Explanation claims, checked here too.
-  CHECKS['4.1/q3'].extra = [
-    { name: 'explanation: 2.31 V and 0.99 V for 3.3 V', check: () => (eq(Math.round(hi(3.3) * 100) / 100, 2.31, 'hi') === true && eq(Math.round(lo(3.3) * 100) / 100, 0.99, 'lo') === true ? true : 'mismatch') },
-  ];
 }
-{
-  const V = 3.3, R = 10000;
-  CHECKS['4.2/q2'] = {
-    allowed: [10, V, 0, r2(((V / R) * 1000))],
-    extra: [{ name: '3.3 V ÷ 10 kΩ = 0.33 mA', check: () => eq(r2((V / R) * 1000), 0.33, 'mA') }],
-  };
-  CHECKS['4.2/q3'] = { allowed: [] };
-}
+CHECKS['4.1/q2'] = { allowed: [5, RED, PIN] };
+CHECKS['4.1/q3'] = { allowed: [20, 30, 25] };
+CHECKS['4.2/q1'] = { allowed: [5, 150, PIN, DESIGN_MA, 26] };
+CHECKS['4.2/q3'] = { allowed: [26, PIN, 150, 5] };
+CHECKS['4.3/q2'] = { allowed: [230, 120, 5] };
+CHECKS['4.3/q3'] = { allowed: [5] };
 
 // ============================================================ Module 5
-// Scene constants for 5.1 (src/lessons/scenes/l5_1.ts uses the same numbers).
-export const BUDGET = { capacity: 2000, mcuActive: 10, mcuSleep: 0.05, led: 20, radioListen: 15, radioBurst: 800, burstMs: 10, burstEveryS: 60, sensor: 1 };
+CHECKS['5.1/q1'] = { allowed: [PIN, 5] };
+CHECKS['5.3/q2'] = { allowed: [9600, 115200] };
+CHECKS['5.3/q3'] = { allowed: [9600] };
+
+// ============================================================ Module 6
 {
-  const cap = 2000, I = 25;
-  CHECKS['5.1/q1'] = {
-    answer: cap / I,
-    traps: { '50000': cap * I }, // multiplied instead of dividing
-    allowed: [I, cap, cap / I, 3],
-    extra: [
-      { name: '"a little over 3 days"', check: () => (cap / I / 24 > 3 && cap / I / 24 < 3.5 ? true : `${cap / I / 24} days`) },
-      { name: 'explanation: 2000 mAh = 20 mA × 100 h = 200 mA × 10 h', check: () => (cap / 20 === 100 && cap / 200 === 10 ? true : 'mismatch') },
-    ],
+  const out = 3.3, head = 1.1;
+  CHECKS['6.1/q1'] = {
+    answer: out + head,
+    traps: { '2.2': out - head },
+    allowed: [head, out, r1(out + head), 4.2],
+    extra: [{ name: 'a full Li-ion (4.2 V) is below 4.4 V', check: () => (4.2 < out + head ? true : 'not below') }],
+  };
+  CHECKS['6.1/q2'] = { allowed: [18650, 4.2, ABS_MAX, PIN] };
+  CHECKS['6.1/q3'] = {
+    allowed: [18650, 3, ABS_MAX, 0.2, 4.2, r1(out + 0.2), out],
+    extra: [{ name: 'LDO keeps 3.3 V down to 3.5 V', check: () => eq(r1(out + 0.2), 3.5, 'dropout') }],
   };
 }
-CHECKS['5.1/q2'] = { allowed: [20, 800, 410], extra: [{ name: '410 is halfway between 20 and 800', check: () => eq((20 + 800) / 2, 410, 'halfway') }] };
+CHECKS['6.2/q3'] = { allowed: [3] };
 {
-  const B = BUDGET;
-  const limit = B.capacity / 168;
-  const lean = B.mcuSleep + (B.radioBurst * B.burstMs) / 1000 / B.burstEveryS + B.sensor; // LED off, radio bursts, MCU sleeping
-  CHECKS['5.1/q3'] = {
-    allowed: [2000, 168, r1(limit)],
+  const cap = 2500, I = 25;
+  CHECKS['6.3/q1'] = { answer: cap / I, traps: { '62500': cap * I, '0.01': I / cap }, allowed: [I, cap, cap / I] };
+  CHECKS['6.3/q2'] = { allowed: [10, 5] };
+  // Plant Buddy: awake 5 s at 100 mA every 10 min; asleep 10 µA (low-power board).
+  const period = 600, awake = 5, iAwake = 100, iSleep = 0.01;
+  const avg = (awake * iAwake + (period - awake) * iSleep) / period;
+  const days = cap / avg / 24;
+  CHECKS['6.3/q3'] = {
+    allowed: [cap, 90, 10, 5, 1],
     extra: [
-      { name: '2000 ÷ 168 ≈ 11.9 mA', check: () => eq(r1(limit), 11.9, 'limit') },
-      { name: 'the lean setup really beats a week', check: () => (B.capacity / lean > 168 ? true : `only ${B.capacity / lean} h`) },
-      { name: 'the default setup does not', check: () => (B.capacity / (B.mcuActive + B.led + B.radioListen + B.sensor) < 168 ? true : 'default already passes') },
+      { name: 'average under 1 mA', check: () => (avg < 1 ? true : `${avg} mA`) },
+      { name: 'over 90 days', check: () => (days > 90 ? true : `${days} days`) },
+      { name: '"about four months" (105–135 days)', check: () => (days > 105 && days < 135 ? true : `${days} days`) },
     ],
   };
 }
 {
   const Vin = 12, Vout = 5, I = 0.5;
-  CHECKS['5.2/q1'] = {
+  CHECKS['6.4/q1'] = {
     answer: (Vin - Vout) * I,
-    traps: { '6': Vin * I, '2.5': Vout * I }, // total input power; load power
-    allowed: [Vin, Vout, 500, I, (Vin - Vout) * I, Vin - Vout, Vout * I, Vin * I],
+    traps: { '6': Vin * I, '2.5': Vout * I },
+    allowed: [Vin, Vout, 500, I, Vin - Vout, (Vin - Vout) * I, Vout * I, Vin * I],
   };
-  CHECKS['5.2/q3'] = { allowed: [5, 500, 12, 100, 3.5], extra: [{ name: 'LDO at 12 V burns 3.5 W', check: () => eq((Vin - Vout) * I, 3.5, 'heat') }] };
-}
-CHECKS['5.2/q2'] = {
-  allowed: [5],
-  extra: [{ name: 'explanation: LDO at 12→5 V, 0.5 A wastes more than the load uses', check: () => ((12 - 5) * 0.5 > 5 * 0.5 ? true : 'not more') }],
-};
-// 5.2 q3 explain: "the buck wastes only about a quarter of a watt" (scene efficiency 90%).
-CHECKS['5.2/q3'].extra!.push({ name: 'buck at 90% wastes ~0.25 W', check: () => { const w = 2.5 * (1 / 0.9 - 1); return w > 0.2 && w < 0.32 ? true : `${w} W`; } });
-CHECKS['5.3/q1'] = { allowed: [100] };
-CHECKS['5.3/q3'] = { allowed: [0.1] };
-
-// ============================================================ Module 6
-CHECKS['6.1/q3'] = { allowed: [5] };
-{
-  const inch = 25.4;
-  CHECKS['6.2/q1'] = {
-    allowed: [805 /* the code 0805 */, 0.08, 0.05, 25.4, 2.0, 1.25, 2012, 0.8, 0.5, 2.5, 8, 5],
-    extra: [
-      { name: '0.08 in ≈ 2.0 mm', check: () => (Math.abs(0.08 * inch - 2.0) < 0.05 ? true : `${0.08 * inch}`) },
-      { name: '0.05 in ≈ 1.25 mm', check: () => (Math.abs(0.05 * inch - 1.25) < 0.03 ? true : `${0.05 * inch}`) },
-      { name: '"about 2.5 times bigger" (mm reading vs inch)', check: () => (Math.abs((0.08 * inch) / 0.8 - 2.5) < 0.1 ? true : `${(0.08 * inch) / 0.8}`) },
-    ],
-  };
-  // Explanation claim "0805 → 2.0 × 1.25 mm → metric 2012" is the same maths.
-}
-{
-  // 6.3: IPC-2221, outer layer, 1 oz copper. Scene: 3 A, slider from 0.4 mm.
-  const I = 3, start = 0.4;
-  const need = traceWidthFor(I, 20);
-  CHECKS['6.3/q2'] = {
-    allowed: [3, 20, 0.9, 1, 2221, Math.round(traceRise(start, I)), start],
-    extra: [
-      { name: '+20 °C at 3 A needs ≈ 0.9 mm', check: () => (Math.abs(need - 0.9) < 0.01 ? true : `${need} mm`) },
-      { name: 'starting 0.4 mm runs at ≈ +76 °C', check: () => eq(Math.round(traceRise(start, I)), 76, 'rise') },
-      { name: 'slider 0.2–1.6 mm puts 0.9 mm in the middle', check: () => eq((0.2 + 1.6) / 2, 0.9, 'mid') },
-    ],
-  };
-}
-import { nightlightDesign, nightlightErcPins } from '../src/content/nightlight.ts';
-import { runDrc } from '../src/sim/drc.ts';
-import { runErc } from '../src/sim/erc.ts';
-{
-  // The board used in 6.3, 6.4, Module 7 and the capstone must be clean, and each
-  // planted 6.4 problem must be caught by exactly one check.
-  const n = (o: object) => runDrc(nightlightDesign(o));
   CHECKS['6.4/q3'] = {
-    allowed: [],
+    allowed: [Vout, 500, Vin, 100, 3.5],
     extra: [
-      { name: 'night-light board: DRC clean', check: () => (n({}).length === 0 ? true : n({}).map((e) => e.msg).join('; ')) },
-      { name: 'night-light board: ERC clean', check: () => (runErc(nightlightErcPins()).length === 0 ? true : 'ERC errors') },
-      { name: 'planted clearance error detected', check: () => (n({ badClearance: true }).filter((e) => e.kind === 'clearance').length === 1 ? true : 'not exactly one') },
-      { name: 'planted unrouted net detected', check: () => (n({ missing: ['LED_A'] }).filter((e) => e.kind === 'unrouted').length === 1 ? true : 'not exactly one') },
-      { name: 'planted floating input detected by ERC', check: () => (runErc(nightlightErcPins({ noR1: true })).length === 1 ? true : 'not exactly one') },
-      { name: 'power trace width set to the 6.3 answer', check: () => (nightlightDesign({}).traces.find((t) => t.id === 'P5V')!.width >= traceWidthFor(3, 20) - 0.001 ? true : 'too thin') },
+      { name: 'LDO at 12 V burns 3.5 W', check: () => eq((Vin - Vout) * I, 3.5, 'heat') },
+      { name: 'buck at 90% wastes ~0.25 W', check: () => { const w = Vout * I * (1 / 0.9 - 1); return w > 0.2 && w < 0.32 ? true : `${w} W`; } },
     ],
   };
 }
 
 // ============================================================ Module 7
-CHECKS['7.1/q2'] = { allowed: [100] };
-CHECKS['7.3/q2'] = { allowed: [50, 0.1] };
-CHECKS['7.3/q3'] = { allowed: [5, 100] };
+CHECKS['7.1/q1'] = { allowed: [PIN] };
+CHECKS['1.3/q2'] = { allowed: [0] };
+CHECKS['2.2/q2'] = { allowed: [0] };
+CHECKS['2.2/q3'] = { allowed: [0] };
+CHECKS['6.4/q2'] = { allowed: [5] };
+CHECKS['7.1/q2'] = { allowed: [100, 0.1, PIN] };
+CHECKS['7.1/q3'] = { allowed: [PIN] };
+CHECKS['7.3/q1'] = { allowed: [PIN, 5] };

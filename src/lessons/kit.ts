@@ -3,6 +3,7 @@ import { battery, breadboard, contactShadow, wire, type BreadboardObj, type Batt
 import { pipe, pump, narrowing } from '../three/water';
 import { Flow } from '../three/particles';
 import type { SceneCtx } from './types';
+import { esp32, jumper, plugIn, usbCable, type Esp32Obj, type Esp32Pin } from '../three/iot';
 
 // Shared building blocks for breadboard lessons.
 
@@ -110,4 +111,65 @@ export function waterLoop(ctx: SceneCtx, w = 3.6, d = 3.6, y = 0.4) {
   const loop = dense([new THREE.Vector3(0, y, zb), new THREE.Vector3(x1, y, zb), new THREE.Vector3(x1, y, zf), new THREE.Vector3(x0, y, zf), new THREE.Vector3(x0, y, zb), new THREE.Vector3(-0.01, y, zb)]);
   const flow = flowAlong(g, loop, WATER_FLOW, { radius: 0.07 });
   return { group: g, pump: pm, narrowing: nar, flow, y, zf, zb, x0, x1 };
+}
+
+// ------------------------------------------------------------ ESP32 bench
+export interface EspBench {
+  bb: BreadboardObj;
+  esp: Esp32Obj;
+  /** Breadboard hole (col, row), in stage.real space (the board sits at the origin). */
+  H: BreadboardObj['hole'];
+  /** The free hole next to an ESP32 pin (row j for the front row, row a for the back). */
+  free(p: Esp32Pin): THREE.Vector3;
+  colOf(p: Esp32Pin): number;
+  /** A small always-on name tag above an ESP32 pin (e.g. "D16", "GND"). Returns the label. */
+  tag(p: Esp32Pin, text?: string, cls?: string): ReturnType<SceneCtx['stage']['label']>;
+  /** A Dupont jumper registered as a part. */
+  jumper(a: THREE.Vector3, b: THREE.Vector3, color: WireColor, name: string, job?: string, h?: number): ReturnType<typeof jumper>;
+}
+
+/**
+ * The standard Plant Buddy bench: a 30-column breadboard with the ESP32 DevKit
+ * plugged in at the left (USB end at column `espCol`) and a USB cable feeding it.
+ */
+export function espBench(ctx: SceneCtx, opts: { cols?: number; espCol?: number; usb?: boolean } = {}): EspBench {
+  const cols = opts.cols ?? 30;
+  const bb = breadboard(cols, true);
+  ctx.stage.real.add(bb.group);
+  ctx.stage.real.add(contactShadow(cols * 0.254 + 6, 10));
+  const esp = esp32();
+  const plug = plugIn(bb, esp, opts.espCol ?? 1);
+  esp.setPower(opts.usb ?? true);
+  if (opts.usb ?? true) {
+    const cable = usbCable(esp.usbEnd.clone().add(esp.group.position));
+    bb.group.add(cable);
+    ctx.stage.part(cable, { name: 'USB cable', job: 'Brings 5 V from your computer or a phone charger. The board turns it into 3.3 V for the ESP32.', symbol: 'wire' });
+  }
+  ctx.stage.part(bb.group, {
+    name: 'Breadboard',
+    job: 'Lets you build circuits without solder. The 5 holes in each short column (a–e, or f–j) are joined underneath; the long rails along the edges carry power and GND.',
+    symbol: 'breadboard',
+  });
+  ctx.stage.part(esp.group, {
+    name: 'ESP32 DevKit',
+    job: 'The brain of Plant Buddy: a small computer with Wi-Fi. Its pins work at 3.3 V; D16 on the board means GPIO 16 in your code.',
+    symbol: 'chip',
+  });
+  return {
+    bb,
+    esp,
+    H: bb.hole,
+    free: plug.free,
+    colOf: plug.colOf,
+    tag: (p, text, cls = '') => {
+      const at = esp.pin(p).setY(0.75);
+      return ctx.stage.label(text ?? p.replace('GND2', 'GND'), esp.group, at, `pin ${cls}`);
+    },
+    jumper: (a, b, color, name, job, h) => {
+      const j = jumper(a, b, color, h);
+      bb.group.add(j.group);
+      ctx.stage.part(j.group, { name, job: job ?? 'A Dupont jumper wire. Everything along one wire sits at the same voltage.', symbol: 'wire' });
+      return j;
+    },
+  };
 }

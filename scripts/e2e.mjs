@@ -93,54 +93,52 @@ const SCENARIOS = {
     expect(fb.startsWith('Done'), `both probes on the + wire → done (${fb.slice(0, 50)})`);
   },
   async '1.2'(page) {
-    await setRange(page, 'Battery voltage', 5);
-    await setRange(page, 'Resistor', logPos(250, 10, 10000));
-    const out = await page.locator('label:has-text("Resistor") output').innerText();
     let fb = await checkTask(page, 3);
-    if (!fb.startsWith('Done')) {
-      // nudge until 20 mA (slider steps are discrete)
-      for (let i = 0; i < 4 && !fb.startsWith('Done'); i++) {
-        await click(page, /Too much/.test(fb) ? 'Increase Resistor' : 'Decrease Resistor');
-        fb = await checkTask(page, 3);
-      }
-    }
-    expect(fb.startsWith('Done'), `5 V and ~250 Ω (${out}) → done (${fb.slice(0, 60)})`);
-    // Burn it.
-    await setRange(page, 'Battery voltage', 12);
-    await setRange(page, 'Resistor', logPos(47, 10, 10000));
-    const card = await failCard(page, 8000);
-    expect(card && /burned open/.test(card), `12 V across 47 Ω burns the resistor (${(card ?? 'no card').slice(0, 70)})`);
-    await clickIn(page, '.failcard', 'Undo (fresh resistor)');
-    await page.waitForTimeout(300);
-    const p = await page.locator('.readout:has-text("Power") .v').innerText();
-    expect(!(await page.locator('.failcard').count()), `undo clears the card; power now ${p}`);
+    expect(fb.startsWith('Not yet') && /LOW/.test(fb), `pin LOW → not yet (${fb.slice(0, 60)})`);
+    await click(page, 'D16 (GPIO 16) is LOW');
+    fb = await checkTask(page, 3);
+    const i = await page.locator('.readout:has-text("LED current") .v').innerText();
+    expect(fb.startsWith('Done') && /5\.9 mA/.test(i), `HIGH with 220 Ω → ${i} → done`);
+    // 47 Ω: over 20 mA, warning but no failure.
+    await setRange(page, 'Resistor', 2);
+    fb = await checkTask(page, 3);
+    const w = await page.locator('.readout:has-text("LED current") .v').innerText();
+    expect(/27\.7 mA/.test(w) && /more than 15 mA/.test(fb) && !(await page.locator('.failcard').count()), `47 Ω → ${w}, warned, not burned`);
+    // 22 Ω: over the pin's 40 mA maximum → the LED burns.
+    await setRange(page, 'Resistor', 1);
+    const card = await failCard(page);
+    expect(card && /59 mA/.test(card) && /40 mA/.test(card), `22 Ω burns the LED (${(card ?? 'no card').slice(0, 70)})`);
+    await clickIn(page, '.failcard', 'Undo (new LED, 220 Ω)');
+    await page.waitForTimeout(200);
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done'), 'undo restores 220 Ω and a working LED');
     // Numeric question traps.
-    const q2 = page.locator('.q').nth(1);
-    await q2.locator('input').fill('500');
-    await q2.getByRole('button', { name: 'Check' }).click();
-    let t = await q2.locator('.fb').innerText();
-    expect(/500 mW/.test(t), `500 with unit W → mW hint (${t.replace(/\s+/g, ' ').slice(0, 60)})`);
-    await q2.locator('select').selectOption({ label: 'mW' });
-    await q2.getByRole('button', { name: 'Check' }).click();
-    t = await q2.locator('.fb').innerText();
-    expect(/^Right/.test(t.trim()), '500 mW accepted as correct');
+    const q1 = page.locator('.q').nth(0);
+    await q1.locator('input').fill('10');
+    await q1.getByRole('button', { name: 'Check' }).click();
+    let t = await q1.locator('.fb').innerText();
+    expect(/full 3\.3 V/.test(t), 'q1: 10 mA → "you used the full 3.3 V"');
+    await q1.locator('input').fill('3.94');
+    await q1.getByRole('button', { name: 'Check' }).click();
+    t = await q1.locator('.fb').innerText();
+    expect(/^Right/.test(t), 'q1: 3.94 mA → right');
   },
   async '1.3'(page) {
     let fb = await checkTask(page, 3);
     expect(fb.startsWith('Not yet'), 'not measured yet → not yet');
+    let m = await page.locator('.readout:has-text("Meter shows") .v').innerText();
+    expect(/3\.30 V/.test(m), `first check: 3V3 to GND reads ${m}`);
     await click(page, 'Amps (A)');
-    await select(page, 'red probe position', 'bp');
-    await select(page, 'black probe position', 'bm');
     const card = await failCard(page);
-    expect(card && /fuse blew/i.test(card), 'amps across the battery blows the fuse');
+    expect(card && /fuse blew/i.test(card), 'amps across 3V3 and GND blows the fuse');
     await clickIn(page, '.failcard', 'Replace fuse');
-    await click(page, 'Break the circuit at the LED');
-    await select(page, 'red probe position', 'c9');
-    await select(page, 'black probe position', 'c7');
+    await click(page, 'Pull out the link wire');
+    await select(page, 'red probe position', 'c22');
+    await select(page, 'black probe position', 'c24');
     await page.waitForTimeout(200);
-    const m = await page.locator('.readout:has-text("Meter shows") .v').innerText();
+    m = await page.locator('.readout:has-text("Meter shows") .v').innerText();
     fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done') && /13\.6 mA/.test(m), `meter in the gap reads ${m} → done`);
+    expect(fb.startsWith('Done') && /5\.9 mA/.test(m), `meter in the gap reads ${m} → done`);
   },
   async '2.1'(page) {
     let fb = await checkTask(page, 3);
