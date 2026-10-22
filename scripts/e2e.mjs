@@ -391,77 +391,75 @@ const SCENARIOS = {
     expect(/log\.csv/.test(m), `SPI send → ${m}`);
   },
   async '6.1'(page) {
-    const wire = async (a, b) => {
-      await select(page, 'Connect from pin', a);
-      await select(page, 'Connect to pin', b);
-      await click(page, 'Connect');
-    };
-    await wire('BT1.+', 'BT1.-');
+    const rail = () => page.locator('.readout:has-text("3V3 rail") .v').innerText();
+    expect((await rail()) === '3.30 V', 'USB → 3.30 V rail');
+    await select(page, 'Power source', 'cell33');
+    const card = await failCard(page);
+    expect(card && /3\.6 V/.test(card), 'cell straight to 3V3 at 4.0 V → over the limit');
+    await clickIn(page, '.failcard', 'Use the LDO module');
+    await select(page, 'Power source', 'cellVin');
+    await setRange(page, 'Cell voltage', 3.7);
+    const r = await rail();
+    const st = await page.locator('.readout:has-text("ESP32") .v').first().innerText();
+    expect(r === '2.60 V' && /brown/.test(st), `cell into VIN at 3.7 V → ${r}, ${st}`);
     let fb = await checkTask(page, 3);
-    expect(/short/i.test(fb), 'battery + to − flagged as a short');
-    await page.locator('.panel').getByRole('button', { name: /Remove wire BT1/ }).first().click();
-    const goal = [['BT1.+', 'SW1.1'], ['SW1.1', 'R2.1'], ['SW1.2', 'R1.1'], ['R1.1', 'Q1.G'], ['R2.2', 'D1.A'], ['D1.K', 'Q1.D'], ['Q1.S', 'R1.2'], ['R1.2', 'BT1.-']];
-    for (const [a, b] of goal) await wire(a, b);
-    const n = await page.locator('.readout:has-text("Goal nets") .v').innerText();
+    expect(fb.startsWith('Not yet'), 'cell → VIN fails the task');
+    await select(page, 'Power source', 'cellLdo');
+    await setRange(page, 'Cell voltage', 3.4);
+    const r2 = await rail();
     fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done'), `all nets (${n}) → done`);
-    await click(page, 'Press SW1 (simulate)');
-    const sim = await page.locator('.readout:has-text("Simulation") .v').innerText();
-    expect(/LED on/.test(sim), `button press lights the LED (${sim})`);
+    expect(r2 === '3.20 V' && fb.startsWith('Done'), `cell → LDO → 3V3: ${r2} at 3.4 V → done`);
+    await click(page, 'USB plugged in as well (to upload code)');
+    const card2 = await failCard(page);
+    expect(card2 && /Two power sources/.test(card2), 'USB as well → two-sources warning');
   },
   async '6.2'(page) {
-    const place = async (part, fp) => {
-      await select(page, 'Part', part);
-      await select(page, 'Footprint', fp);
-      await click(page, 'Place it');
-      await page.waitForTimeout(150);
-    };
-    await place('R', 'm0603');
-    const card = await failCard(page, 2000);
-    expect(card && /imperial 0201/.test(card), 'metric/imperial trap explained');
-    await page.waitForTimeout(1800);
-    await place('J', 'tht254');
-    const card2 = await failCard(page, 2000);
-    expect(card2 && /2\.0 mm/.test(card2), 'JST pitch mismatch explained');
-    await page.waitForTimeout(1800);
-    for (const [p, f] of [['R', 'r0805'], ['Q', 'sot23'], ['LED', 'tht254'], ['J', 'jstph']]) await place(p, f);
-    const fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done'), 'all four parts on their footprints → done');
+    await click(page, 'Wi-Fi on (bursts of 250 mA)');
+    await page.waitForTimeout(6000); // bursts come every 1.5 s of screen time
+    const resets = await page.locator('.readout:has-text("Brownout resets") .v').innerText();
+    expect(Number(resets) > 0, `no capacitor: ${resets} brownout reset(s)`);
+    await select(page, 'Capacitor', String(100e-6));
+    let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet') && /2\.79 V/.test(fb), `100 µF: ${fb.slice(8, 60)}`);
+    await select(page, 'Capacitor', String(470e-6));
+    await click(page, 'Far end of the breadboard');
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), '470 µF far away → still dips under 3.0 V');
+    await click(page, 'Right at 3V3 and GND');
+    fb = await checkTask(page, 3);
+    const m = await page.locator('.readout:has-text("Lowest rail voltage") .v').innerText();
+    expect(fb.startsWith('Done'), `470 µF at the pins: lowest ${m} → done`);
   },
   async '6.3'(page) {
-    let fb = await checkTask(page, 2);
-    expect(fb.startsWith('Not yet') && /\+76/.test(fb), `starts at 0.4 mm, +76 °C → not yet (${fb.slice(0, 60)})`);
-    await setRange(page, 'Power trace width (3 A)', 0.9);
-    const r = await page.locator('.readout:has-text("Temperature rise") .v').innerText();
-    fb = await checkTask(page, 2);
-    expect(fb.startsWith('Done') && r === '+20 °C', `0.9 mm → ${r} → done`);
-    await setRange(page, 'Power trace width (3 A)', 0.2);
-    const card = await failCard(page, 9000);
-    expect(card && /burned/.test(card), '0.2 mm at 3 A → trace burns');
-    await clickIn(page, '.failcard', 'Undo (new board, 0.9 mm trace)');
-    await click(page, 'Cut a slot in the ground plane');
-    const ret = await page.locator('.readout:has-text("Return current") .v').innerText();
-    expect(/detours/.test(ret), 'slot → return current detours');
-    await click(page, 'Show me the via');
+    const life = () => page.locator('.readout:has-text("Battery life") .v').innerText();
+    let l = await life();
+    expect(/hours/.test(l), `always awake: ${l}`);
+    await click(page, 'Deep sleep between readings');
+    await select(page, 'Wake up every', '10');
+    await select(page, 'Awake for', '5');
+    l = await life();
+    let fb = await checkTask(page, 3);
+    expect(/^1[89] days/.test(l) && fb.startsWith('Not yet'), `deep sleep on a DevKit: ${l} → not yet`);
+    await click(page, 'Low-power board (10 µA asleep)');
+    l = await life();
+    const a = await page.locator('.readout:has-text("Average current") .v').innerText();
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done') && /124 days/.test(l), `low-power board, every 10 min for 5 s: ${a}, ${l} → done`);
+    const q1 = page.locator('.q').nth(0);
+    await q1.locator('input').fill('62500');
+    await q1.getByRole('button', { name: 'Check' }).click();
+    expect(/Divide/.test(await q1.locator('.fb').innerText()), 'q1: 62500 → "divide instead"');
   },
   async '6.4'(page) {
+    const card = await failCard(page, 9000);
+    expect(card && /Thermal shutdown/.test(card), 'LDO at 12 V / 500 mA → thermal shutdown');
     let fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet'), 'four problems → not yet');
-    await click(page, 'Run DRC (layout)');
-    await click(page, 'Run ERC (schematic)');
-    const d = await page.locator('.readout:has-text("DRC errors") .v').innerText();
-    const e = await page.locator('.readout:has-text("ERC errors") .v').innerText();
-    expect(d === '3' && e === '1', `DRC finds ${d}, ERC finds ${e}`);
-    for (const label of ['Re-route the IND trace away from the via', 'Route the LED_A connection', 'Snap C1 onto its pads', 'Add the 10 kΩ pull-up (R1) to the schematic']) {
-      await page.locator('.panel').getByRole('button', { name: label }).first().click();
-    }
+    expect(fb.startsWith('Not yet'), 'LDO setup fails the task');
+    await clickIn(page, '.failcard', 'Switch to the buck regulator');
+    await page.waitForTimeout(500);
     fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet') && /again/.test(fb), 'fixed but not re-run → asks to re-run');
-    await click(page, 'Run DRC (layout)');
-    await click(page, 'Run ERC (schematic)');
-    fb = await checkTask(page, 3);
-    const d2 = await page.locator('.readout:has-text("DRC errors") .v').innerText();
-    expect(fb.startsWith('Done') && d2 === '0', 'clean re-run → done');
+    const heat = await page.locator('.readout:has-text("Heat in regulator") .v').innerText();
+    expect(fb.startsWith('Done'), `buck regulator, heat ${heat} → done`);
   },
   async '7.1'(page) {
     let fb = await checkTask(page, 3);

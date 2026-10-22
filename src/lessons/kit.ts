@@ -117,11 +117,15 @@ export function waterLoop(ctx: SceneCtx, w = 3.6, d = 3.6, y = 0.4) {
 export interface EspBench {
   bb: BreadboardObj;
   esp: Esp32Obj;
+  /** The USB cable (null when the bench starts unplugged). */
+  usb: THREE.Object3D | null;
   /** Breadboard hole (col, row), in stage.real space (the board sits at the origin). */
   H: BreadboardObj['hole'];
   /** The free hole next to an ESP32 pin (row j for the front row, row a for the back). */
   free(p: Esp32Pin): THREE.Vector3;
   colOf(p: Esp32Pin): number;
+  /** Lead route from `a` to a breadboard hole that goes around the ESP32's USB end instead of across it. */
+  around(a: THREE.Vector3, hole: THREE.Vector3, y?: number): THREE.Vector3[];
   /** A small always-on name tag above an ESP32 pin (e.g. "D16", "GND"). Returns the label. */
   tag(p: Esp32Pin, text?: string, cls?: string): ReturnType<SceneCtx['stage']['label']>;
   /** A Dupont jumper registered as a part. */
@@ -140,8 +144,9 @@ export function espBench(ctx: SceneCtx, opts: { cols?: number; espCol?: number; 
   const esp = esp32();
   const plug = plugIn(bb, esp, opts.espCol ?? 1);
   esp.setPower(opts.usb ?? true);
+  let cable: THREE.Object3D | null = null;
   if (opts.usb ?? true) {
-    const cable = usbCable(esp.usbEnd.clone().add(esp.group.position));
+    cable = usbCable(esp.usbEnd.clone().add(esp.group.position));
     bb.group.add(cable);
     ctx.stage.part(cable, { name: 'USB cable', job: 'Brings 5 V from your computer or a phone charger. The board turns it into 3.3 V for the ESP32.', symbol: 'wire' });
   }
@@ -158,9 +163,15 @@ export function espBench(ctx: SceneCtx, opts: { cols?: number; espCol?: number; 
   return {
     bb,
     esp,
+    usb: cable,
     H: bb.hole,
     free: plug.free,
     colOf: plug.colOf,
+    around: (a, hole, y = 0.9) => {
+      const x = esp.group.position.x - 3.4; // just past the USB end
+      const pts = [a, a.clone().setY(y), new THREE.Vector3(x, y, a.z), new THREE.Vector3(x, y, hole.z), hole.clone().setY(y), hole.clone().setY(0.75), hole.clone()];
+      return pts.filter((p, i) => i === 0 || p.distanceTo(pts[i - 1]) > 1e-3);
+    },
     tag: (p, text, cls = '') => {
       const at = esp.pin(p).setY(0.75);
       return ctx.stage.label(text ?? p.replace('GND2', 'GND'), esp.group, at, `pin ${cls}`);
