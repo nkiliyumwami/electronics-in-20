@@ -219,64 +219,73 @@ const SCENARIOS = {
     expect(/11\.8 mA/.test(both), `both in parallel: ${both} (5.9 + 5.9 mA)`);
   },
   async '3.1'(page) {
-    await setRange(page, 'Input voltage (Vin)', 5);
-    await setRange(page, 'R1 (top)', logPos(1000, 100, 100000));
-    await setRange(page, 'R2 (bottom)', logPos(2000, 100, 100000));
-    const v = await page.locator('.readout:has-text("Vout") .v').innerText();
+    await page.waitForTimeout(1500);
+    const ghost = await page.locator('.readout:has-text("Presses counted") .v').innerText();
+    expect(Number(ghost) > 0, `floating pin counts ghost presses while idle (${ghost})`);
+    // GPIO 34: INPUT_PULLUP does nothing there.
+    await click(page, 'D34 (GPIO 34, input-only)');
+    await click(page, 'INPUT_PULLUP in code');
     let fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done'), `5 V, 1k/2k → ${v} → done`);
-    await click(page, 'Connect the load');
-    await setRange(page, 'Load resistance', logPos(1000, 100, 1000000));
-    const v2 = await page.locator('.readout:has-text("Vout") .v').innerText();
-    expect(parseFloat(v2) < parseFloat(v), `load drags output down: ${v} → ${v2}`);
+    expect(/no effect on GPIO 34/.test(fb), 'INPUT_PULLUP on GPIO 34 → still floating');
+    await click(page, 'External 10 kΩ pull-up');
+    await click(page, 'Reset counter');
+    await click(page, 'Press the button once');
+    await page.waitForTimeout(5000); // one slow-motion press lasts about 3 s
+    const bounced = await page.locator('.readout:has-text("Presses counted") .v').innerText();
+    expect(Number(bounced) > 1, `pull-up but no debounce: one press counted ${bounced} times`);
+    await click(page, 'Software debounce (20 ms)');
+    await click(page, 'Reset counter');
+    await click(page, 'Press the button once');
+    await page.waitForTimeout(5000);
+    const one = await page.locator('.readout:has-text("Presses counted") .v').innerText();
     fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet'), 'task refuses while loaded');
+    expect(fb.startsWith('Done') && one === '1', `external pull-up + debounce: counted ${one} → done (${fb.slice(0, 80)})`);
   },
   async '3.2'(page) {
+    const raw = await page.locator('.readout:has-text("analogRead(34)") .v').innerText();
+    const v = await page.locator('.readout:has-text("Voltage at D34") .v').innerText();
+    expect(raw === '2606' && v === '2.10 V', `full battery through 100k/100k: ${v}, raw ${raw}`);
     let fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet'), `default 10k × 100µF = 1 s → not yet`);
-    await setRange(page, 'Resistor R', logPos(20000, 1000, 100000));
-    await setRange(page, 'Capacitor C', logPos(100e-6, 1e-6, 100e-6));
+    expect(fb.startsWith('Done'), '100k/100k → done');
+    await select(page, 'R1 (top)', '10000');
+    await select(page, 'R2 (bottom)', '10000');
     fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done'), `20k × 100µF → done (${fb.slice(0, 40)})`);
-    await click(page, 'Fit electrolytic backwards');
-    await click(page, 'Charge');
-    const card = await failCard(page, 9000);
-    expect(card && /popped/.test(card), 'reversed electrolytic pops when charged');
-    await clickIn(page, '.failcard', 'Undo (new capacitor)');
-    expect(page.errors.length === 0, 'undo works');
+    expect(/210 µA/.test(fb), `10k/10k → drains 210 µA (${fb.slice(0, 70)})`);
+    await click(page, 'Remove the divider (wire the battery straight in)');
+    const card = await failCard(page);
+    expect(card && /3\.6 V/.test(card), 'no divider at 4.2 V → over the pin\'s limit');
+    await clickIn(page, '.failcard', 'Undo (put the divider back)');
+    const q1 = page.locator('.q').nth(0);
+    await q1.locator('input').fill('3.40');
+    await q1.getByRole('button', { name: 'Check' }).click();
+    const t = await q1.locator('.fb').innerText();
+    expect(/top resistor/.test(t), 'q1: 3.40 V → "that is across R1"');
   },
   async '3.3'(page) {
     let fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet'), 'starts too dim (1 kΩ)');
-    await click(page, 'Take out the resistor');
-    const card = await failCard(page, 4000);
-    expect(card && /burned out/.test(card), 'no resistor → LED burns out');
-    await clickIn(page, '.failcard', 'Undo (new LED)');
-    await click(page, 'Use the nearest standard value');
-    const i = await page.locator('.readout:has-text("LED current") .v').innerText();
+    expect(fb.startsWith('Not yet') && /Record both/.test(fb), 'uncalibrated → not yet');
+    await setRange(page, 'Soil moisture (time-lapse)', 0);
+    await click(page, 'Record DRY (now)');
+    await setRange(page, 'Soil moisture (time-lapse)', 100);
+    await click(page, 'Record WET (now)');
+    await page.waitForTimeout(800);
+    const cal = await page.locator('.readout:has-text("Recorded points") .v').innerText();
+    expect(/DRY 29\d\d · WET 12\d\d/.test(cal), `calibration recorded: ${cal}`);
+    await setRange(page, 'Soil moisture (time-lapse)', 52);
     fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done'), `calculator value gives ${i} → done`);
-    await click(page, 'Flip the LED');
-    const i2 = await page.locator('.readout:has-text("LED current") .v').innerText();
-    expect(/^0\.0 mA/.test(i2), `flipped LED blocks current (${i2})`);
+    const p = await page.locator('.readout:has-text("Code says") .v').innerText();
+    expect(fb.startsWith('Done'), `calibrated, soil ~50% → ${p} → done`);
   },
   async '3.4'(page) {
-    await click(page, 'Motor (1 A)');
-    await click(page, 'Set the pin HIGH (3.3 V)');
-    await click(page, 'Set the pin LOW (0 V)');
-    let card = await failCard(page, 3000);
-    expect(card && /Spark/.test(card), 'motor off without diode → spark');
-    await clickIn(page, '.failcard', 'Fit a flyback diode');
-    await click(page, 'Set the pin HIGH (3.3 V)');
-    await click(page, 'Set the pin LOW (0 V)');
+    await setRange(page, 'Sensor output voltage', 5);
+    const card = await failCard(page);
+    expect(card && /3\.6 V/.test(card), '5 V straight into D4 → over the limit');
+    await clickIn(page, '.failcard', 'Undo (fit the divider)');
+    await setRange(page, 'Sensor output voltage', 5);
+    const v = await page.locator('.readout:has-text("Voltage at D4") .v').innerText();
+    const r = await page.locator('.readout:has-text("ESP32 reads") .v').innerText();
     const fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done'), 'motor off with diode → done');
-    await click(page, 'LED strip (2 A)');
-    await setRange(page, 'Gate voltage', 2.25);
-    card = await failCard(page, 9000);
-    expect(card && /cooked/.test(card), 'half-on gate cooks the MOSFET');
-    await clickIn(page, '.failcard', 'Undo (new MOSFET, gate off)');
+    expect(fb.startsWith('Done') && v === '3.33 V' && r === 'HIGH', `divider: 5 V → ${v}, reads ${r} → done`);
   },
   async '3.5'(page) {
     let fb = await checkTask(page, 3);

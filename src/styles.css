@@ -202,6 +202,8 @@ a.btn.primary { color: var(--brand-ink); }
 /* ESP32 pin name tags: small, dark, like silkscreen. */
 .lbl.pin { background: #1b2433; color: #fff; border-color: #33415a; font-size: 11px; padding: 0 5px; }
 .lbl.pin.good { background: var(--good); border-color: var(--good); }
+.lbl.pin.warn { background: var(--warn); border-color: var(--warn); color: #fff; }
+.lbl.pin.bad { background: var(--bad); border-color: var(--bad); color: #fff; }
 /* "Start here" text under the bobbing 3D arrow. */
 .lbl.hint { background: #ffb020; color: #2a1d00; border-color: #c98400; font-size: 13px; padding: 3px 9px; }
 /* The first control pulses until the learner touches anything. */
