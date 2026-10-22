@@ -78,7 +78,7 @@ function courseMap() {
       'section',
       { class: 'hero' },
       h('h1', null, 'Electronics in 20%'),
-      h('p', { class: 'lead' }, 'The small part of electronics that explains most of it. Play with each 3D circuit first, then read a short explanation. Every lesson fits in a coffee break.'),
+      h('p', { class: 'lead' }, 'The electronics every IoT beginner needs, and nothing more. Build Plant Buddy, an ESP32 plant monitor, one 3D lesson at a time: play first, then read a short explanation. Every lesson fits in a coffee break.'),
       h(
         'div',
         { class: 'stats' },
@@ -89,7 +89,7 @@ function courseMap() {
       h(
         'div',
         { class: 'btnrow' },
-        next ? h('a', { class: 'btn primary', href: `#/lesson/${next.id}` }, doneCount ? `Continue: ${next.id} ${next.title}` : 'Start lesson 1.1') : h('a', { class: 'btn primary', href: '#/capstone' }, 'Build the capstone board'),
+        next ? h('a', { class: 'btn primary', href: `#/lesson/${next.id}` }, doneCount ? `Continue: ${next.id} ${next.title}` : 'Start lesson 1.1') : h('a', { class: 'btn primary', href: '#/capstone' }, 'Build Plant Buddy'),
       ),
     ),
   );
@@ -128,8 +128,8 @@ function courseMap() {
     h(
       'section',
       { class: 'module-card' },
-      h('h2', null, h('span', { class: 'num' }, '★'), 'Capstone: the night-light board'),
-      h('p', { class: 'blurb' }, 'Design a real board from schematic to virtual power-on, then download your certificate. 15 min.'),
+      h('h2', null, h('span', { class: 'num' }, '★'), 'Capstone: build Plant Buddy'),
+      h('p', { class: 'blurb' }, "Wire up the whole ESP32 plant monitor, check its battery life, fix a friend's faulty build, and watch it water the plant. Then download your certificate. 15 min."),
       h('a', { class: 'btn primary', href: '#/capstone' }, 'Open the capstone'),
     ),
   );
@@ -309,7 +309,7 @@ async function glossary() {
       'main',
       { id: 'main' },
       h('h1', null, 'Later, if you\'re curious'),
-      h('p', { class: 'lead note' }, 'Everything this course deliberately skipped, in one line each. None of it is needed for your first board.'),
+      h('p', { class: 'lead note' }, 'Everything this course deliberately skipped, in one line each. None of it is needed for your first IoT device.'),
       h('dl', { class: 'card gloss' }, GLOSSARY.flatMap((g) => [h('dt', null, g.term), h('dd', null, g.def)])),
       h('p', null, h('a', { class: 'btn', href: '#/' }, '← Course map')),
     ),

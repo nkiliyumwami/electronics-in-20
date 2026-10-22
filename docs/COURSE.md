@@ -1,53 +1,55 @@
-# Electronics in 20%: course map and full lesson content
+# Electronics in 20% (for IoT beginners): course map and full lesson content
+
+The electronics an IoT beginner needs, taught by building **Plant Buddy**, a battery-powered ESP32 plant monitor (soil sensor, BME280, status LED, pump).
 
 _Generated from `src/content/` by `npm run docs`. Do not edit by hand._
 
-**24 lessons in 7 modules, plus a 15-minute capstone: about 2 h 56 min in total.**
+**24 lessons in 7 modules, plus a 15-minute capstone: about 2 h 57 min in total.**
 
 ## Course map
 
 | # | Lesson | Min | "I can now…" |
 |---|---|---|---|
-| **M1** | **The big three** | **20** | |
-| 1.1 | Voltage, current, resistance | 6 | Explain voltage, current and resistance with water pipes; Explain why voltage is always between two points |
-| 1.2 | Ohm's law and power | 7 | Work out voltage, current or resistance from the other two; Spot a resistor that will overheat |
-| 1.3 | Using a multimeter | 7 | Measure the voltage across a part; Measure current safely by breaking the circuit |
-| **M2** | **Circuits that work (and why they don't)** | **19** | |
-| 2.1 | Ground, the 0 V reference | 6 | Connect two boards so their signals mean the same thing |
-| 2.2 | Shorts and opens | 6 | Tell a short from an open; Find a broken connection with the continuity beeper |
-| 2.3 | Series and parallel | 7 | Predict what happens when parts are chained or side by side; Add up resistors in series and in parallel |
-| **M3** | **The five parts you'll see everywhere** | **36** | |
-| 3.1 | Resistors and the voltage divider | 7 | Make a lower voltage from a higher one with two resistors |
-| 3.2 | Capacitors (tiny rechargeable buckets) | 8 | Use a capacitor to smooth power or create a delay; Fit an electrolytic capacitor the right way round |
-| 3.3 | Diodes and LEDs | 7 | Pick the right resistor for any LED; Spot a diode that is in backwards |
-| 3.4 | Transistors as switches (MOSFET) | 8 | Let a tiny chip pin switch a motor or LED strip; Protect a switch from a motor's kickback |
-| 3.5 | Chips and microcontrollers | 6 | Find a chip's limits in its datasheet |
-| **M4** | **Digital basics** | **18** | |
-| 4.1 | Logic levels (1s and 0s are voltage ranges) | 5 | Check whether two chips can talk without a level shifter |
-| 4.2 | Pull-up resistors, floating inputs and button bounce | 7 | Wire a button so it reads reliably |
-| 4.3 | How chips talk (I2C, SPI, UART) | 6 | Recognise I2C, SPI and UART on a schematic |
-| **M5** | **Powering things** | **19** | |
-| 5.1 | Batteries and power budgets | 6 | Estimate battery life from a power budget; Size a supply for peak current, not the average |
-| 5.2 | Regulators (linear vs switching) | 7 | Choose between a linear regulator and a switcher; Predict how hot a linear regulator will get |
-| 5.3 | Decoupling capacitors | 6 | Place decoupling capacitors where they actually work |
-| **M6** | **From idea to circuit board** | **29** | |
-| 6.1 | Schematic → netlist | 8 | Draw a simple schematic and explain what a net is |
-| 6.2 | Footprints | 6 | Match a part to the correct footprint |
-| 6.3 | Layers, traces, vias and the ground plane | 8 | Read the layers of a 2-layer board; Size a power trace for its current; Keep the ground plane solid |
-| 6.4 | Design rule checks | 7 | Run DRC and ERC, and fix what they flag |
-| **M7** | **Make it real** | **20** | |
-| 7.1 | Fabrication files, BOM, and how boards are made | 7 | Prepare a complete order package (Gerbers, drill file, BOM) |
-| 7.2 | Assembly and reflow | 6 | Explain how parts are soldered by machine, and why the paste matters |
-| 7.3 | First power-on (bring-up) | 7 | Bring up a new board safely with a current limit |
-| ★ | Capstone: the night-light board | 15 | Design a simple board end to end, ready to order |
+| **M1** | **Electricity your ESP32 runs on** | **20** | |
+| 1.1 | Voltage, current, resistance | 6 | Explain voltage, current and resistance with water pipes; Explain why "3.3 V" always means "compared with GND" |
+| 1.2 | Ohm's law: a resistor for your status LED | 7 | Pick a safe resistor for an LED on an ESP32 pin; Work out voltage, current or resistance from the other two |
+| 1.3 | Using a multimeter on your project | 7 | Check the 3.3 V supply of an ESP32 project; Measure the current an LED or sensor draws |
+| **M2** | **Wiring circuits that work** | **25** | |
+| 2.1 | Breadboards and jumper wires | 6 | Read which breadboard holes are connected; Place an ESP32 and parts so every leg gets its own strip |
+| 2.2 | GND: the shared reference | 6 | Connect a module so its signals mean the same thing to the ESP32 |
+| 2.3 | Opens and shorts: why your board resets | 7 | Tell an open from a short by the symptoms; Find a broken jumper wire with the continuity beeper |
+| 2.4 | Series and parallel: sharing the 3V3 rail | 6 | Power several modules from one 3.3 V rail; Add up the current a rail has to supply |
+| **M3** | **Inputs: reading the world** | **28** | |
+| 3.1 | Buttons, pull-ups and debouncing | 7 | Read a button reliably with INPUT_PULLUP; Explain floating pins and contact bounce |
+| 3.2 | Voltage dividers and the ADC | 8 | Read a battery voltage safely on an ADC pin; Pick ADC1 pins so readings work with Wi-Fi on |
+| 3.3 | Analog sensors: calibrating soil moisture | 6 | Calibrate an analog sensor into useful units |
+| 3.4 | 5 V modules and a 3.3 V ESP32 | 7 | Connect a 5 V module to a 3.3 V ESP32 without damaging it |
+| **M4** | **Outputs: making things happen** | **21** | |
+| 4.1 | LEDs and PWM brightness | 6 | Dim an LED or slow a motor with PWM; Fit an LED the right way round |
+| 4.2 | A MOSFET switch for the pump | 8 | Switch a pump or motor from a GPIO pin with a MOSFET |
+| 4.3 | Motors, relays and flyback diodes | 7 | Protect the ESP32 from motor kickback with a flyback diode; Choose a safe way to switch bigger loads |
+| **M5** | **Talking to sensors** | **21** | |
+| 5.1 | Reading a module's pinout and datasheet | 7 | Find the four key facts in a module's datasheet; Wire an I2C sensor module to the ESP32 |
+| 5.2 | I2C: two wires, many sensors | 8 | Wire several I2C sensors to one ESP32; Fix an I2C address clash |
+| 5.3 | UART and SPI at a glance | 6 | Wire a UART module such as a GPS; Recognise which bus a module uses |
+| **M6** | **Power for a device that lasts** | **28** | |
+| 6.1 | Powering an ESP32: USB, VIN, 3V3 and batteries | 7 | Choose a safe way to power an ESP32; Run an ESP32 from a Li-ion battery |
+| 6.2 | Wi-Fi bursts, brownouts and capacitors | 7 | Stop brownout resets during Wi-Fi |
+| 6.3 | Battery life and deep sleep | 8 | Estimate battery life from a wake-sleep cycle; Use deep sleep to make a battery last months |
+| 6.4 | Regulators: LDO or buck? | 6 | Choose between an LDO and a buck converter; Predict how hot a linear regulator will get |
+| **M7** | **From breadboard to a reliable device** | **19** | |
+| 7.1 | Debugging a dead device | 8 | Bring up a new build safely with a current-limited supply; Track down a short with the meter |
+| 7.2 | Making it permanent | 6 | Choose how to turn a prototype into a lasting device |
+| 7.3 | Safety: mains, Li-ion and outdoors | 5 | Know which jobs need certified products, never DIY |
+| ★ | Capstone: build Plant Buddy | 15 | Wire a complete ESP32 device, budget its battery, and debug it |
 
-## Module 1: The big three
+## Module 1: Electricity your ESP32 runs on
 
-_Voltage, current and resistance: the three ideas everything else is built on._
+_Voltage, current and resistance, seen through the 3.3 V pins of an ESP32._
 
 ### 1.1 Voltage, current, resistance (6 min)
 
-**Opening prompt (before any reading):** Drag the battery slider and watch the glowing charges speed up. Then make the resistor bigger.
+**Opening prompt (before any reading):** Drag the supply voltage and watch the glowing charges speed up. Then make the resistor bigger.
 
 **Water view:** yes (Real / Both / Water toggle)
 
@@ -55,22 +57,22 @@ _Voltage, current and resistance: the three ideas everything else is built on._
 
 > Electricity is easiest to picture as water in pipes. **Voltage** is pressure: the push that makes charge move. **Current** is flow: how much charge passes a point each second. **Resistance** is how narrow the pipe is, so how hard it is for the flow to get through.
 >
-> Voltage is always a difference *between two points*, just as water only flows when the pressure at one end is higher than at the other. That is why a meter has two probes. When someone says "this pin is at 3.3 V", they quietly mean "3.3 V higher than ground".
+> Voltage is always a difference *between two points*. When a tutorial says "the ESP32 runs on 3.3 V" or "this pin is HIGH", it quietly means "3.3 V higher than GND". That is why every module you connect needs a GND wire as well.
 >
-> In a single loop, current is the same everywhere. Whatever flows out of the battery has to flow back in.
+> In a single loop, current is the same everywhere. Whatever flows out of the supply has to flow back in.
 
-**Key takeaway:** Voltage pushes, current flows, resistance resists. Voltage is always measured between two points.
+**Key takeaway:** Voltage pushes, current flows, resistance resists. A voltage is always measured against a second point, usually GND.
 
-**Skills unlocked:** Explain voltage, current and resistance with water pipes; Explain why voltage is always between two points
+**Skills unlocked:** Explain voltage, current and resistance with water pipes; Explain why "3.3 V" always means "compared with GND"
 
-**Q1.** Someone says "the voltage at this pin is 3.3 V". What is missing?
+**Q1.** A tutorial says "connect the sensor's VCC to 3.3 V". Compared with what is that 3.3 V?
 
-- ❌ Nothing, that is a complete measurement: _A single point has no voltage on its own. Voltage is a difference, so there must be a second point._
-- ✅ The second point it is compared with (usually ground): _"3.3 V" really means "3.3 V higher than ground". The reference is just so common that people leave it out._
-- ❌ The current flowing through the pin: _Current is a separate thing. Even without it, the statement is incomplete, because voltage needs a reference point._
-- ❌ The unit should be amps: _Volts is the right unit for voltage. What is missing is the second point._
+- ✅ GND, the 0 V reference of the ESP32: _"3.3 V" means "3.3 V higher than GND". The reference is so common that tutorials leave it out._
+- ❌ Nothing: 3.3 V is a complete measurement: _A single point has no voltage on its own. Voltage is a difference, so there is always a second point._
+- ❌ The 5 V coming from USB: _Voltages on the board are measured from GND, not from 5 V. Measured from 5 V, the 3V3 pin would read 1.7 V *lower*._
+- ❌ The current flowing into the sensor: _Current is a separate thing. The statement needs a reference point, and that point is GND._
 
-  Hint: Think of the meter's two probes. Where does the second one go?
+  Hint: Think of the meter's two probes. Where does the black one go?
 
 **Q2.** Which one is measured *across* a part, from one side of it to the other?
 
@@ -80,15 +82,15 @@ _Voltage, current and resistance: the three ideas everything else is built on._
 
   Hint: Pressure difference or flow rate: which one needs two points?
 
-**Q3 (do it in 3D).** Place the two probes so the meter reads **0 V**, while the battery is still switched on (above 1 V).
+**Q3 (do it in 3D).** Place the two probes so the meter reads **0 V**, while the supply is still switched on (above 1 V).
 
 - Scene check: `zeroVolts`
 - Hint: Put both probes on the same wire. A wire has almost no resistance, so there is no pressure difference along it.
-- On success: _Same wire, same pressure, so no difference: 0 V. The battery's push only shows up *across* the resistor._
+- On success: _Same wire, same pressure, so no difference: 0 V. The supply's push only shows up *across* the resistor._
 
-### 1.2 Ohm's law and power (7 min)
+### 1.2 Ohm's law: a resistor for your status LED (7 min)
 
-**Opening prompt (before any reading):** Drag the voltage up and watch the resistor. Try to make it smoke.
+**Opening prompt (before any reading):** Tap GPIO 16 to switch the status LED on. Then slide the resistor smaller and see how far the pin can be pushed.
 
 **The one live formula:** `V = I × R`
 
@@ -96,217 +98,297 @@ _Voltage, current and resistance: the three ideas everything else is built on._
 
 **Explanation**
 
-> Ohm's law ties the big three together: **voltage = current × resistance**. Keep the voltage the same and double the resistance, and the current halves. Raise the voltage and more current pushes through the same resistor. If you know any two, you can work out the third.
+> An ESP32 pin set HIGH gives 3.3 V. A red LED uses about 2.0 V of that, and what is left, 1.3 V, lands across the resistor. **Ohm's law** then fixes the current: V = I × R, so I = 1.3 V ÷ R. With 220 Ω that is about 6 mA: clearly lit, and easy on the pin.
 >
-> Wherever current is forced through resistance, energy turns into heat. The heat meter shows that rate, called power and measured in watts. Because current rises with voltage, heat climbs fast. Double the current through the same resistor and you get four times the heat. That is the smoke you just made.
+> A smaller resistor means more current. An ESP32 pin can supply about 40 mA at most; design for 20 mA or less. Leave the resistor out and nothing limits the current except the pin itself, which is how pins die.
 >
-> Every resistor has a power rating. The tiny ones on most boards handle ¼ W or less. Go past it and the part cooks.
+> Heat is tiny here: the resistor turns about 8 mW into warmth. Power starts to matter in Module 4, when the ESP32 switches a pump.
 
-**Key takeaway:** Know two of V, I and R and you can find the third. Heat rises fast with current, and every part has a limit.
+**Key takeaway:** Every LED on a GPIO pin needs a resistor: R = (3.3 V − LED voltage) ÷ current. Aim for 5–15 mA.
 
-**Skills unlocked:** Work out voltage, current or resistance from the other two; Spot a resistor that will overheat
+**Skills unlocked:** Pick a safe resistor for an LED on an ESP32 pin; Work out voltage, current or resistance from the other two
 
-**Q1.** There are 5 V across a 1 kΩ resistor. How much current flows?
+**Q1.** Your ESP32 pin gives 3.3 V, the red LED needs 2.0 V, and you fit a 330 Ω resistor. How much current flows?
 
-- ❌ 5 A: _That would be 5 V ÷ 1 Ω. The "k" matters: 1 kΩ is 1000 Ω, so the current is a thousand times smaller._
-- ✅ 5 mA: _5 V ÷ 1000 Ω = 0.005 A, which is 5 mA._
-- ❌ 0.2 mA: _That is 1 ÷ 5: the "1" from 1 kΩ on top and the voltage underneath. Voltage goes on top: 5 ÷ 1000 Ω = 0.005 A = 5 mA._
-- ❌ 200 mA: _That is 1000 ÷ 5, resistance divided by voltage. Flip it: I = V ÷ R = 5 ÷ 1000._
+- Answer: **3.939 mA** (±2%; units accepted: mA, A)
+- Hint: First find the voltage left for the resistor: 3.3 V − 2.0 V. Then I = V ÷ R.
+- On a right answer: _3.3 V − 2.0 V = 1.3 V across the resistor, and 1.3 V ÷ 330 Ω ≈ 3.9 mA. Lit, a bit dim._
+- If they enter 10 mA: _You used the full 3.3 V. The LED takes 2.0 V first, so only 1.3 V is across the resistor._
+- If they enter 6.061 mA: _That is the LED's 2.0 V divided by 330 Ω. The resistor gets what is left: 3.3 V − 2.0 V = 1.3 V._
+- If they enter 254 mA: _That is R ÷ V (330 ÷ 1.3). Current is V ÷ R: 1.3 V ÷ 330 Ω._
 
-  Hint: I = V ÷ R. Write 1 kΩ as 1000 Ω first.
+**Q2.** Plant Buddy has 3 status LEDs (red, 2.0 V), each on its own pin at about 10 mA. Which resistor do you fit to each one?
 
-**Q2.** A resistor has 5 V across it and 100 mA flowing through it. How much power is it turning into heat?
+- ✅ 150 Ω: _The ideal is 1.3 V ÷ 10 mA = 130 Ω. 150 Ω is a common value just above it and gives 8.7 mA: bright enough, safe for the pin._
+- ❌ 33 Ω: _1.3 V ÷ 33 Ω ≈ 39 mA, right at the pin's 40 mA maximum and double the LED's 20 mA rating._
+- ❌ 330 Ω: _That works, but gives only 3.9 mA: noticeably dimmer than the 10 mA you wanted._
+- ❌ 1.3 kΩ: _That is 1.3 V ÷ 1 mA, a slipped decimal point. It gives only 1.0 mA, a very dim glow._
 
-- Answer: **0.5 W** (±1%; units accepted: W, mW)
-- Hint: Power = voltage × current. Change 100 mA to amps first: 0.1 A.
-- On a right answer: _5 V × 0.1 A = 0.5 W. That is double what a typical ¼ W resistor can take, so it would smoke._
-- If they enter 500 W: _Right, that's 500 mW. Enter it in watts: 0.5, or switch the unit to mW._
-- If they enter 0.0005 W: _That is 0.5 mW, a thousand times too small. The number 0.5 is right in watts: switch the unit to W, or enter 500 mW._
+  Hint: R = (3.3 V − 2.0 V) ÷ 10 mA. Then pick the nearest standard value that keeps the current at or below 10 mA.
 
-**Q3 (do it in 3D).** Set the battery to **5 V**, then adjust the resistor until exactly **20 mA** flows.
+**Q3 (do it in 3D).** Pick a resistor so the LED runs at between **5 and 15 mA**, with GPIO 16 switched HIGH.
 
-- Scene check: `set20mA`
-- Hint: Tap R on the triangle: R = V ÷ I = 5 ÷ 0.02.
-- On success: _250 Ω gives exactly 20 mA. Shops sell standard values, so in real life you would buy 270 Ω, which gives about 18.5 mA._
+- Scene check: `led5to15`
+- Hint: Start at 220 Ω, then try one or two steps smaller.
+- On success: _220 Ω gives 5.9 mA, 150 Ω gives 8.7 mA and 100 Ω gives 13.0 mA. All three suit a status LED; 220 Ω is the classic choice._
 
-### 1.3 Using a multimeter (7 min)
+### 1.3 Using a multimeter on your project (7 min)
 
-**Opening prompt (before any reading):** Drag the red and black probes onto the circuit, or pick points in the controls. Start by reading the voltage across the LED.
+**Opening prompt (before any reading):** Drag the red and black probes onto the circuit, or pick points in the controls. Start by checking the 3V3 pin against GND.
 
 **Water view:** yes (Real / Both / Water toggle)
 
 **Explanation**
 
-> A multimeter is the one tool on every electronics bench. Turn the dial to choose what it measures.
+> A multimeter is the first tool to buy for IoT work. Turn the dial to choose what it measures.
 >
-> **Voltage:** touch the probes to both sides of a part, without disconnecting anything. The meter compares the two points, like a pressure gauge across a narrowing.
+> **Voltage:** touch the probes to two points without disconnecting anything. The first check on any project: black on GND, red on 3V3. You should see about 3.3 V.
 >
-> **Current:** current is flow, so it has to pass *through* the meter. You break the circuit and let the meter bridge the gap, like a flow meter cut into a pipe.
+> **Current:** current has to flow *through* the meter. Pull one wire out of the circuit and let the meter bridge the gap, like a flow meter cut into a pipe.
 >
-> In current mode the meter is nearly a plain wire inside. Put it straight across a battery and you have made a short: a huge current rushes through, and the meter's fuse blows to protect it.
+> In current mode the meter is almost a plain wire. Never put it straight across 3V3 and GND: that is a short circuit, and the meter's fuse blows to protect it.
 >
-> **Resistance:** only measure it on parts with the power off.
+> **Resistance:** only on parts with the power off.
 
-**Key takeaway:** Measure voltage across a part. Measure current through it.
+**Key takeaway:** Measure voltage across, current through. First check on any board: 3.3 V between 3V3 and GND.
 
-**Skills unlocked:** Measure the voltage across a part; Measure current safely by breaking the circuit
+**Skills unlocked:** Check the 3.3 V supply of an ESP32 project; Measure the current an LED or sensor draws
 
-**Q1.** To measure the current through a part, you have to…
+**Q1.** To measure the current through Plant Buddy's status LED, you have to…
 
-- ❌ touch the probes to both sides of it: _That measures voltage. Current has to flow through the meter, so the meter must become part of the loop._
-- ✅ break the circuit and put the meter in the gap: _The meter becomes part of the loop, so the same current flows through it and through the part._
-- ❌ take the part out and measure it on its own: _That measures the part's resistance, not the current flowing in the working circuit._
+- ❌ touch the probes to both legs of the LED: _That measures the voltage across the LED, not the current through it._
+- ✅ break the circuit and let the meter bridge the gap: _All the current has to pass through the meter, like a flow meter cut into a pipe._
+- ❌ unplug the USB and measure resistance: _With the power off no current flows at all, and resistance mode measures something else._
 
-  Hint: Current is flow. How would you measure the flow in a water pipe?
+  Hint: Current is flow. Where would you put a flow meter in a pipe?
 
-**Q2.** The dial is on amps. You touch the probes straight across the battery. What happens?
+**Q2.** The dial is on amps, and you touch the probes to the ESP32's 3V3 and GND pins. What happens?
 
-- ❌ It shows the battery's voltage: _In current mode the meter is almost a wire, so it cannot read voltage. It shorts the battery instead._
-- ✅ The meter's fuse blows: _The meter shorts the battery, a huge current flows, and the fuse sacrifices itself._
-- ❌ Nothing happens: it reads 0 A: _A low-resistance path straight across a battery is a short. The current is anything but zero._
+- ❌ It shows how much current the ESP32 draws: _To measure that, the meter must be *in* the supply line. Across 3V3 and GND it is a shortcut instead._
+- ✅ A short circuit: a big current rushes through the meter and its fuse blows: _The meter is nearly a wire, so it shorts 3V3 to GND. The fuse blows (and the ESP32 resets)._
+- ❌ Nothing, it reads 0: _Current mode is almost a wire, so a lot flows, not nothing._
 
-  Hint: In current mode the meter is nearly a plain wire.
+  Hint: In current mode the meter is almost a plain wire.
 
 **Q3 (do it in 3D).** Measure the current through the LED. The meter has to actually show it.
 
 - Scene check: `measureLedCurrent`
-- Hint: Set the dial to amps, tap "Break the circuit" to open the gap next to the LED, then put one probe on each side of the gap.
-- On success: _About 13.6 mA. In a single loop the same current flows through every part, so that is the LED current too._
+- Hint: Amps mode, then put the probes on the two ends of the link wire's gap, after taking the link out.
+- On success: _About 5.9 mA: (3.3 V − 2.0 V) ÷ 220 Ω. The meter's own tiny resistance barely changes it._
 
-## Module 2: Circuits that work (and why they don't)
+## Module 2: Wiring circuits that work
 
-_Ground, shorts, opens, and how parts share voltage and current._
+_Breadboards, jumper wires, GND, and the opens and shorts behind most "it doesn't work" moments._
 
-### 2.1 Ground, the 0 V reference (6 min)
+### 2.1 Breadboards and jumper wires (6 min)
 
-**Opening prompt (before any reading):** Board B's LED should copy board A's button, but it glitches. Press A's button a few times, then add one wire to fix it.
+**Opening prompt (before any reading):** Tap any hole to light up every hole joined to it underneath. Then move the LED until it lights.
 
-**Water view:** yes (Real / Both / Water toggle)
+**Water view:** no
 
 **Explanation**
 
-> Voltage only means something between two points, so every circuit needs an agreed reference. That reference is **ground**: the point we call 0 V. When a chip says its output is at 3.3 V, it means 3.3 V above *its own* ground.
+> A breadboard hides metal strips under its holes. In the middle, each short column of 5 holes (a–e, and separately f–j) is one strip: anything plugged into the same strip is connected. The long red and blue **rails** along the edges run the whole length and carry 3.3 V and GND.
 >
-> Two boards running on separate batteries each have their own ground, and nothing joins them. To board B, board A's signal is a voltage measured from nowhere in particular, so B reads random noise.
+> The groove down the middle separates the two halves. The ESP32 sits across it, so each of its pins gets a strip of its own.
 >
-> Join the two grounds with a wire and both boards share one 0 V. Now A's 3.3 V means 3.3 V to B as well. The ground wire also gives the signal's current a way back home, because every current needs a loop.
+> The ESP32 DevKit is wide: on a standard breadboard it leaves just one free hole next to each pin. That is room for one jumper wire per pin, so plan your wiring.
 >
-> Rule of thumb: boards that share a signal must share ground.
+> A part with both legs in the same strip is bypassed: the current takes the metal strip instead.
 
-**Key takeaway:** Ground is the agreed 0 V reference. Circuits that talk to each other must share it.
+**Key takeaway:** Same strip = connected. Give each leg of a part its own column, and use the rails for 3.3 V and GND.
 
-**Skills unlocked:** Connect two boards so their signals mean the same thing
+**Skills unlocked:** Read which breadboard holes are connected; Place an ESP32 and parts so every leg gets its own strip
 
-**Q1.** Two boards, each with its own battery, are joined by a single signal wire. Why does the receiver glitch?
+**Q1.** You plug an LED's two legs into holes 12a and 12c. What happens?
 
-- ❌ The signal wire is too thin: _Thickness hardly matters for a tiny signal current. The real problem is that the two boards do not share a reference._
-- ✅ The boards do not share a 0 V reference, so the receiver cannot tell what the signal means: _Without a shared ground, the signal voltage is not measured from anything the receiver knows about, so it reads noise._
-- ❌ The two batteries cancel each other out: _The batteries are not connected to each other at all, so they cannot cancel. What is missing is a shared ground._
+- ✅ It never lights: both legs are on the same strip, which bypasses it: _The strip connects the two legs directly, so the current goes through the metal, not the LED._
+- ❌ It lights normally: _Both legs sit on one strip, so there is no voltage across the LED. It stays dark._
+- ❌ It lights only if you add a resistor: _A resistor does not help while the strip bypasses the LED. Move one leg to another column._
 
-  Hint: A voltage is always measured from somewhere. Where is the receiver measuring from?
+  Hint: Holes a to e in one column share a single metal strip.
 
-**Q2.** In a circuit, what is "ground"?
+**Q2.** Why does the ESP32 DevKit sit across the groove in the middle of the breadboard?
 
-- ✅ The point everyone agrees to call 0 V, the reference other voltages are measured from: _That is all ground is: a shared reference point, usually the battery's − side._
-- ❌ A wire that has to go into the earth: _Mains equipment is sometimes connected to the earth for safety, but in a circuit "ground" just means the shared 0 V reference._
-- ❌ The place where used-up current disappears: _Current is never used up. It flows back to its source, and the ground wire is often the path it takes._
+- ✅ So each pin gets its own strip; otherwise opposite pins would be joined together: _Across the groove, the left and right rows of pins land on different strips, so no two pins are shorted._
+- ❌ To keep the board cool: _The groove has nothing to do with cooling. It keeps the two rows of pins electrically apart._
+- ❌ Because the rails only work in the middle: _The rails run along the outer edges. The groove keeps the two rows of pins apart._
+
+  Hint: What would happen to two pins opposite each other if they were on the same side?
+
+**Q3 (do it in 3D).** Move the LED so it lights up.
+
+- Scene check: `ledLit`
+- Hint: The resistor ends in one column; the LED's other leg needs a column of its own that is wired to GND.
+- On success: _Now each leg has its own strip: one shared with the resistor, one with the wire to GND. The current has to pass through the LED._
+
+### 2.2 GND: the shared reference (6 min)
+
+**Opening prompt (before any reading):** The ESP32 reads a sensor box that runs on its own battery, but the readings glitch. Press the sensor's test button a few times, then add one wire to fix it.
+
+**Water view:** no
+
+**Explanation**
+
+> A signal wire carries a voltage, and a voltage only means something compared with a reference. The sensor says "HIGH" by putting 3.3 V on its output, *measured from its own GND*.
+>
+> If the ESP32's GND is not joined to the sensor's GND, they share no reference. To the ESP32 the signal floats and drifts with every bit of electrical noise, so the readings glitch.
+>
+> The fix is one wire: GND to GND. Every module you connect needs it, even one with its own power supply. The GND wire also gives the signal's current a path home.
+>
+> Wiring rule for every module: power, GND, signal.
+
+**Key takeaway:** Every module shares GND with the ESP32. A signal without a shared GND is meaningless.
+
+**Skills unlocked:** Connect a module so its signals mean the same thing to the ESP32
+
+**Q1.** A sensor box with its own battery is joined to the ESP32 by a single signal wire. Why do the readings glitch?
+
+- ✅ There is no shared GND, so the signal's voltage has no reference: _Without a shared GND, the signal is not measured from anything the ESP32 knows about, so it reads noise._
+- ❌ The signal wire is too thin: _Thickness hardly matters for a tiny signal current. The two sides just do not share a reference._
+- ❌ The two batteries cancel each other out: _The batteries are not connected to each other, so they cannot cancel. What is missing is a shared GND._
+
+  Hint: A voltage is always measured from somewhere. Where is the ESP32 measuring from?
+
+**Q2.** In an ESP32 project, what is GND?
+
+- ✅ The 0 V reference that every voltage is measured from, shared by all modules: _That is all GND is: the agreed 0 V point, wired to every module._
+- ❌ A wire that has to go into the earth: _Mains equipment is sometimes earthed for safety, but in a project GND just means the shared 0 V reference._
+- ❌ Where used-up current disappears: _Current is never used up. It flows back to its source, usually along the GND wire._
 
   Hint: Think back to the meter: it always needs a reference point.
 
-**Q3 (do it in 3D).** Add a wire so board B's LED copies board A's button every time, with no glitches and no faults.
+**Q3 (do it in 3D).** Add a wire so the ESP32 reads the sensor's button correctly every time, with no glitches and no faults.
 
 - Scene check: `fixGround`
-- Hint: Connect GND on board A to GND on board B. Drag between the two pins, or use the "Add a wire" controls.
-- On success: _With one shared ground, both boards agree on what 0 V is, so A's HIGH is HIGH for B too, and the signal current has a path home._
+- Hint: Connect the sensor box's GND to the ESP32's GND. Drag between the two pins, or use the "Add a wire" controls.
+- On success: _With one shared GND, both sides agree on what 0 V is, so the sensor's HIGH is HIGH for the ESP32 too._
 
-### 2.2 Shorts and opens (6 min)
+### 2.3 Opens and shorts: why your board resets (7 min)
 
-**Opening prompt (before any reading):** Break this working circuit two ways: cut a wire, then bridge + to −. Every mistake can be undone.
+**Opening prompt (before any reading):** Break this working circuit two ways: pull out a jumper, then bridge 3V3 to GND. Every mistake can be undone.
+
+**Water view:** no
+
+**Explanation**
+
+> Most "it doesn't work" moments are one of two faults. An **open** is a gap: a jumper not pushed fully in, or a wire broken inside its insulation. No path, no current, so the LED or sensor just stays dead.
+>
+> A **short** is a shortcut: 3V3 touching GND through a stray wire, or two legs on the same strip. A huge current flows, the voltage collapses, and the ESP32 resets, or your computer switches the USB port off to protect itself.
+>
+> To hunt an open, unplug the USB and set the meter to continuity. It beeps when two points are connected, so test each jumper from end to end.
+
+**Key takeaway:** Dead circuit: look for an open. Resetting board or a USB port that cuts out: look for a short.
+
+**Skills unlocked:** Tell an open from a short by the symptoms; Find a broken jumper wire with the continuity beeper
+
+**Q1.** Your ESP32 keeps resetting, and the computer warns that the USB device draws too much power. Short or open?
+
+- ✅ A short: _A short lets a huge current flow, so the voltage collapses and the USB port protects itself._
+- ❌ An open: _An open stops current flowing, so nothing would draw too much power. This is a short._
+
+  Hint: Which fault makes a lot of current flow?
+
+**Q2.** With the USB unplugged, you hold the meter on continuity across a jumper wire, end to end. It stays silent. What does that tell you?
+
+- ✅ The jumper is broken inside: it is an open: _Silence means no connection between its two ends. Replace that jumper._
+- ❌ The jumper is fine: _A good jumper connects its two ends, so the meter would beep._
+- ❌ There is a short somewhere else: _Continuity across one wire only tests that wire. Silence means this wire is open._
+
+  Hint: The beeper sounds when two points are connected.
+
+**Q3 (do it in 3D).** Tap **Start the fault hunt**. One jumper is secretly broken. Find it with the beeper, then replace only that wire.
+
+- Scene check: `faultHunt`
+- Hint: USB unplugged, meter on continuity, probes on both ends of each jumper in turn.
+- On success: _Testing each wire end to end finds an open in seconds, without unplugging anything else._
+
+### 2.4 Series and parallel: sharing the 3V3 rail (6 min)
+
+**Opening prompt (before any reading):** Switch between series and parallel, then pull one LED out. Which wiring keeps the other one lit?
 
 **Water view:** yes (Real / Both / Water toggle)
 
 **Explanation**
 
-> Most broken circuits fail in one of two ways.
+> Parts can share a supply two ways. In **parallel**, each part connects straight across 3V3 and GND, so each gets the full 3.3 V and works on its own. That is how every module in Plant Buddy is powered: straight off the rails.
 >
-> An **open** is a gap: a cut wire, a cracked solder joint, a loose connector. Current needs a complete loop, so everything stops. Nothing gets hot, it just does not work.
+> In **series**, parts sit one after another in a single loop. The same current flows through all of them, and they share the voltage. Pull one out and the loop is broken for all of them.
 >
-> A **short** is an unwanted shortcut, usually from + straight to −, skipping the parts that limit the current. With almost no resistance in the way, current shoots up until something gives: a wire glows, a part burns, or a fuse blows. A fuse is a deliberately weak link that melts first.
->
-> To hunt either one, switch the power off and use the meter's **continuity** mode. It beeps when two points are joined with almost no resistance. No beep across a wire means it is open. A beep between + and − means a short.
+> Currents in parallel add up: the rail supplies the sum of what every module draws. Voltages in series add up too: two red LEDs need 2.0 + 2.0 = 4.0 V, more than 3.3 V, so in series on a 3.3 V supply they stay dark.
 
-**Key takeaway:** An open stops everything. A short sends current racing where it should not. Find both with the power off, using the continuity beeper.
+**Key takeaway:** Power modules in parallel from the rails: each gets 3.3 V, and their currents add up.
 
-**Skills unlocked:** Tell a short from an open; Find a broken connection with the continuity beeper
+**Skills unlocked:** Power several modules from one 3.3 V rail; Add up the current a rail has to supply
 
-**Q1.** A board's supply rail reads 0 V, and the bench supply says it has hit its current limit. Short or open?
+**Q1.** From the 3V3 rail, the soil sensor draws 5 mA and the status LED 6 mA, both in parallel. How much current does the rail supply?
 
-- ✅ A short: _The supply is pushing all the current it is allowed to, and the voltage has collapsed. The current is pouring through a path with almost no resistance._
-- ❌ An open: _An open stops current, so the supply would show almost no current and the full voltage. This is the opposite._
+- Answer: **11 mA** (±1%; units accepted: mA, A)
+- Hint: In parallel, the currents add up.
+- On a right answer: _5 mA + 6 mA = 11 mA. Each part takes its own share, and the rail supplies the total._
+- If they enter 6 mA: _That is only the biggest current. In parallel, every branch adds to the total: 5 mA + 6 mA._
 
-  Hint: Which one lets a huge current flow: a missing path, or a shortcut?
+**Q2.** Two red LEDs (2.0 V each) and a resistor are wired in series to a 3.3 V pin. Why don't they light?
 
-**Q2.** With the power off, you put the meter on continuity across a broken trace. What happens?
+- ✅ Together they need 4.0 V, more than the 3.3 V available: _2.0 V + 2.0 V = 4.0 V. With only 3.3 V, no current flows, so neither lights._
+- ❌ The resistor is too big: _No resistor value helps: the two LEDs alone need 4.0 V and the pin gives only 3.3 V._
+- ❌ LEDs can never be wired in series: _They can, with a high enough supply, such as 5 V. On 3.3 V it is not enough._
 
-- ❌ It beeps: _It beeps only for a near-zero resistance path. A broken trace is a gap, so there is no path._
-- ✅ No beep, and the screen shows OL (open): _There is no path between the probes, so the meter reads "OL" (open, over limit) and stays silent._
-- ❌ The meter's fuse blows: _Continuity mode uses a tiny test current from the meter's own battery, so nothing gets stressed._
+  Hint: In series, the voltages add up.
 
-  Hint: The meter beeps only when the two points are joined.
+**Q3 (do it in 3D).** Set things up so that one LED is pulled out and the other one is **still lit**.
 
-**Q3 (do it in 3D).** Tap **Start the fault hunt**. One wire is secretly broken. Find it with the beeper, then replace only that wire.
+- Scene check: `oneOutOtherLit`
+- Hint: Which wiring gives each LED its own path to GND?
+- On success: _In parallel each LED has its own path from 3V3 to GND, so removing one does not affect the other. That is why modules hang off the rails in parallel._
 
-- Scene check: `repairFault`
-- Hint: Disconnect the battery, set the dial to continuity, and put the probes on the two ends of each wire in turn. The one that stays silent is broken.
-- On success: _You found the open without guessing: the broken wire was the only one that did not beep._
+## Module 3: Inputs: reading the world
 
-### 2.3 Series and parallel (7 min)
+_Buttons, the ADC, sensors and 5 V modules: getting clean readings into the ESP32._
 
-**Opening prompt (before any reading):** Switch between series and parallel, then drag a bulb out of its socket. Which one keeps the other bulb lit?
+### 3.1 Buttons, pull-ups and debouncing (7 min)
 
-**Water view:** yes (Real / Both / Water toggle)
+**Opening prompt (before any reading):** Don't touch the button: watch the pin's reading on its own. Then turn on the pull-up.
+
+**Water view:** no
 
 **Explanation**
 
-> Parts can be joined in two basic ways.
+> A button connects a pin to GND while it is pressed. When it is not pressed, the pin is connected to nothing: it **floats**, picks up noise like an antenna, and reads HIGH, LOW, HIGH at random.
 >
-> **Series** means one after another, in a single loop. The same current flows through every part, so if one part fails, the whole chain goes dark. The battery's voltage is shared out along the chain, and the resistances simply add up.
+> A **pull-up** resistor gently holds the pin at 3.3 V, so it reads HIGH until the button pulls it down to GND. The ESP32 has one built in: `pinMode(pin, INPUT_PULLUP)`. Careful: GPIO 34 to 39 have no internal pull-ups, so add a 10 kΩ resistor to 3V3 there.
 >
-> **Parallel** means side by side, with each part across the same two points. Every part gets the full voltage and takes its own current, and the battery supplies the total. Remove one branch and the others carry on. Each extra path makes it easier for current to flow, so the total resistance drops: two equal resistors in parallel act like half of one.
->
-> Real circuits mix both, but you can always break them down into these two patterns.
+> Button contacts also **bounce**: one press makes and breaks contact several times within a few milliseconds, so your code sees several presses. **Debouncing** means ignoring changes for about 20–50 ms after the first one.
 
-**Key takeaway:** Series: same current, and the voltages add up. Parallel: same voltage, and the currents add up.
+**Key takeaway:** Every button pin needs a pull-up (built in, or 10 kΩ to 3V3) and debouncing in code.
 
-**Skills unlocked:** Predict what happens when parts are chained or side by side; Add up resistors in series and in parallel
+**Skills unlocked:** Read a button reliably with INPUT_PULLUP; Explain floating pins and contact bounce
 
-**Q1.** Two 1 kΩ resistors are connected in parallel. What is the total resistance?
+**Q1.** A button connects GPIO 27 to GND, and there is no pull-up. The button is not pressed. What does the pin read?
 
-- Answer: **500 Ω** (±1%; units accepted: Ω, kΩ)
-- Hint: Two equal resistors in parallel act like half of one.
-- On a right answer: _Half of 1 kΩ is 500 Ω. Two paths make it twice as easy for the current to flow._
-- If they enter 2000 Ω: _That is the series total. In parallel there are two paths, so the total is *smaller* than either resistor: half of one._
+- ✅ Random HIGHs and LOWs: the pin is floating: _Connected to nothing, the pin picks up noise and changes its mind all the time._
+- ❌ Always LOW: _Only while pressed is it tied to GND. Released, it is connected to nothing, so it floats._
+- ❌ Always HIGH: _That needs a pull-up to 3.3 V, and there isn't one. It floats._
 
-**Q2.** A 470 Ω and a 220 Ω resistor are connected in series. What is the total resistance?
+  Hint: What is the pin connected to while the button is open?
 
-- Answer: **690 Ω** (±1%; units accepted: Ω, kΩ)
-- Hint: In series, resistances simply add up.
-- On a right answer: _470 Ω + 220 Ω = 690 Ω. The current has to fight its way through both._
-- If they enter 150 Ω: _That is roughly the parallel value. In series the current must get through both resistors, one after the other, so add them up._
+**Q2.** With INPUT_PULLUP on and the button wired to GND, what does the pin read while the button is pressed?
 
-**Q3 (do it in 3D).** Set things up so that one bulb is out of its socket and the other one is **still lit**.
+- ✅ LOW: _The button ties the pin straight to GND. The weak pull-up only takes over again when you let go._
+- ❌ HIGH: _HIGH is what it reads when *not* pressed. Pressed, the button pulls it to GND._
+- ❌ It floats: _With a pull-up fitted, the pin never floats: HIGH when released, LOW when pressed._
 
-- Scene check: `oneBulbParallel`
-- Hint: Which layout gives each bulb its own path to the battery?
-- On success: _In parallel each bulb has its own branch, so pulling one out leaves the other branch complete._
+  Hint: The pull-up resistor is weak; the button is a direct path to GND.
 
-## Module 3: The five parts you'll see everywhere
+**Q3 (do it in 3D).** Make one press of the button count **exactly once** on the counter.
 
-_Resistors, capacitors, diodes, transistors and chips: what each one is for._
+- Scene check: `countOnce`
+- Hint: You need two fixes: a pull-up, so the pin does not float, and debouncing, so the bounces are ignored. Then reset the counter and press once.
+- On success: _The pull-up gives the pin a definite HIGH, and debouncing ignores the contact bounce. One press, one count._
 
-### 3.1 Resistors and the voltage divider (7 min)
+### 3.2 Voltage dividers and the ADC (8 min)
 
-**Opening prompt (before any reading):** Slide R1 and R2 and watch the probe on the middle point. Then plug in the load.
+**Opening prompt (before any reading):** Drain the battery with the slider and watch the ESP32's reading. Then try reading the battery without the divider.
 
 **The one live formula:** `Vout = Vin × R2 ÷ (R1 + R2)`
 
@@ -314,395 +396,514 @@ _Resistors, capacitors, diodes, transistors and chips: what each one is for._
 
 **Explanation**
 
-> Put two resistors in series across a supply and the voltage drops a little across each. The point between them sits partway between top and bottom, and you choose where by picking the two resistors. That is a **voltage divider**.
+> An ESP32 can measure a voltage on its **ADC** pins and turn it into a number from 0 to 4095. It can only measure up to 3.3 V, though, and a full Li-ion battery is 4.2 V. Feed that straight in and you exceed the pin's 3.6 V limit.
 >
-> If the bottom resistor, R2, is a big share of the total, the middle point sits high. If it is a small share, the point sits low. Equal resistors give exactly half.
+> A **voltage divider** fixes it: two resistors in series share the voltage in proportion to their size. Two equal resistors halve it, so 4.2 V becomes 2.1 V, inside the ADC's most accurate range (about 0.15 to 2.5 V). In code, multiply back by 2.
 >
-> Dividers are everywhere: turning a 5 V signal into a safe 3.3 V one, reading a battery level, setting a reference. The catch is that anything connected to the middle point (a **load**) sits in parallel with R2 and drags the output down. A divider is fine for feeding a chip input, which takes almost no current, but it cannot power anything.
+> Use big values such as 100 kΩ: the divider then drains only 21 µA from the battery. And use ADC1 pins (GPIO 32 to 39): the ADC2 pins stop working while Wi-Fi is on.
 
-**Key takeaway:** Two resistors can make any lower voltage, but only for inputs that draw almost no current.
+**Key takeaway:** Never put more than 3.3 V on an ESP32 pin. Scale bigger voltages down with a divider and multiply back in code.
 
-**Skills unlocked:** Make a lower voltage from a higher one with two resistors
+**Skills unlocked:** Read a battery voltage safely on an ADC pin; Pick ADC1 pins so readings work with Wi-Fi on
 
-**Q1.** The input is 10 V, R1 (top) is 8 kΩ and R2 (bottom) is 2 kΩ. What is the output voltage?
+**Q1.** A divider has R1 = 100 kΩ on top and R2 = 47 kΩ at the bottom, fed from 5 V USB. What voltage reaches the ADC pin?
 
-- Answer: **2 V** (±1%; units accepted: V, mV)
-- Hint: Vout = Vin × R2 ÷ (R1 + R2).
-- On a right answer: _10 V × 2 kΩ ÷ 10 kΩ = 2 V. R2 is a fifth of the total, so the output is a fifth of the input._
-- If they enter 8 V: _That is the voltage across R1, the top resistor. The output is measured across the bottom one, R2: 10 × 2 ÷ (8 + 2)._
+- Answer: **1.599 V** (±1%; units accepted: V)
+- Hint: Vout = Vin × R2 ÷ (R1 + R2). The pin sits across R2, the bottom resistor.
+- On a right answer: _5 V × 47 kΩ ÷ 147 kΩ ≈ 1.60 V: well inside the ADC's range._
+- If they enter 3.401 V: _That is the voltage across R1, the top resistor. The pin sits across R2: use R2 on top of the fraction._
+- If they enter 2.35 V: _You divided by R1 only. Divide by the total, R1 + R2 = 147 kΩ._
 
-**Q2.** You connect a 1 kΩ load to the middle of a divider made of two 10 kΩ resistors. What happens to the output?
+**Q2.** The battery reading works on USB, but turns to nonsense once Wi-Fi starts. The divider goes to GPIO 4. Why?
 
-- ❌ It stays at half the input: _It would without the load. But the load joins R2 in parallel, so the bottom half of the divider gets much smaller._
-- ✅ It drops far below half: _The load in parallel with the 10 kΩ bottom resistor acts like about 909 Ω, so the output falls to less than a tenth of the input._
-- ❌ It rises above half: _Adding another path to ground can only pull the middle point down, never up._
+- ✅ GPIO 4 is an ADC2 pin, and ADC2 can't be used while Wi-Fi is on. Move it to GPIO 32 to 39.: _Wi-Fi takes over ADC2. The ADC1 pins (GPIO 32 to 39) keep working._
+- ❌ The battery goes flat when Wi-Fi starts: _Wi-Fi uses more current, but the reading would drop a little, not turn to nonsense. ADC2 is the problem._
+- ❌ The resistors are too big: _Big resistors are fine for a slow battery reading. The pin choice is the problem._
+- ❌ The ADC needs 5 V: _The ADC works on 3.3 V. The problem is that GPIO 4 belongs to ADC2._
 
-  Hint: The load sits in parallel with the bottom resistor. What happens to a parallel pair's resistance?
+  Hint: Not every ADC pin works all the time.
 
-**Q3 (do it in 3D).** With **no load** connected, set the input to **5 V** and pick R1 and R2 so the middle point reads **3.3 V** (±0.1 V).
+**Q3 (do it in 3D).** Choose R1 and R2 so a full battery (4.2 V) gives **1.8–2.5 V** at the pin, and the divider draws **less than 50 µA**.
 
-- Scene check: `make33`
-- Hint: You need R2 to be about two-thirds of the total. Try R1 = 1 kΩ and R2 = 2 kΩ.
-- On success: _Any pair where R2 is about twice R1 works: 5 V × 2 ÷ 3 ≈ 3.3 V. This is the classic way to bring a 5 V signal down to 3.3 V._
+- Scene check: `dividerSafe`
+- Hint: Equal resistors halve the voltage. Then make them big enough that 4.2 V ÷ (R1 + R2) is under 50 µA.
+- On success: _100 kΩ and 100 kΩ give 2.1 V and draw 21 µA. 10 kΩ pairs give the same voltage but waste 210 µA, all day, every day._
 
-### 3.2 Capacitors (tiny rechargeable buckets) (8 min)
+### 3.3 Analog sensors: calibrating soil moisture (6 min)
 
-**Opening prompt (before any reading):** Tap Charge and watch the tank fill. Then make it fill more slowly.
+**Opening prompt (before any reading):** Let the soil dry out and water it again, watching the raw reading. Then record a dry and a wet reading to calibrate.
 
-**The one live formula:** `τ = R × C`
-
-**Water view:** yes (Real / Both / Water toggle)
-
-**Explanation**
-
-> A capacitor stores charge, like a small tank. Fill it through a resistor (a narrow pipe) and its voltage climbs quickly at first, then more and more slowly as it nears the supply.
->
-> The speed is set by the **time constant**, R × C, in seconds. After one time constant the capacitor is about 63% full. After five it is basically full. A bigger resistor or a bigger capacitor means a slower fill.
->
-> Because its voltage cannot jump instantly, a capacitor **smooths** power (it fills in dips) and **creates delays**.
->
-> Small **ceramic** capacitors have no polarity. Bigger **electrolytic** ones do: a stripe marks the − leg. Fit one backwards and it can bulge and pop.
-
-**Key takeaway:** Capacitors resist sudden voltage changes. R × C sets how fast they fill, which smooths power and creates delays.
-
-**Skills unlocked:** Use a capacitor to smooth power or create a delay; Fit an electrolytic capacitor the right way round
-
-**Q1.** A 10 kΩ resistor charges a 100 nF capacitor. What is the time constant?
-
-- Answer: **0.001 ms** (±1%; units accepted: ms, s, µs)
-- Hint: Use plain units: 10000 Ω × 0.0000001 F gives seconds.
-- On a right answer: _10000 × 0.0000001 = 0.001 s, which is 1 ms. After 1 ms the capacitor is about 63% charged._
-- If they enter 1 ms: _That would be true for 100 µF. Nano is a thousand times smaller than micro: 100 nF = 0.0000001 F._
-
-**Q2.** How do you make the delay longer?
-
-- ✅ Use a bigger resistor or a bigger capacitor: _Both make R × C bigger: a narrower pipe, or a bigger tank to fill._
-- ❌ Use a smaller capacitor: _A smaller tank fills faster, so the delay gets shorter._
-- ❌ Raise the supply voltage: _The capacitor then fills to a higher voltage, but it still takes R × C to reach 63% of it._
-
-  Hint: A bigger tank, or a narrower pipe?
-
-**Q3 (do it in 3D).** Pick R and C so the capacitor takes about **2 seconds** to reach 63% (±10%). Tap Charge to see it.
-
-- Scene check: `tau2s`
-- Hint: R × C = 2 s. For example 20 kΩ × 100 µF, or 100 kΩ × 20 µF.
-- On success: _R × C ≈ 2 s, so the curve crosses the 63% line at about the 2 s mark._
-
-### 3.3 Diodes and LEDs (7 min)
-
-**Opening prompt (before any reading):** Flip the LED around, then try taking out its resistor. You can undo anything.
-
-**The one live formula:** `R = (Vsupply − Vled) ÷ I`
-
-**Water view:** yes (Real / Both / Water toggle)
-
-**Explanation**
-
-> A **diode** is a one-way valve for current. Current flows from its + leg (anode) to its − leg (cathode, marked by a stripe or a flat edge) and is blocked the other way.
->
-> An **LED** is a diode that glows. It only conducts once the voltage across it reaches a threshold: about 2 V for red, about 3 V for blue or white. Past that point the current shoots up with even a little more voltage. Wire an LED straight to a battery and nothing holds that current back: it flashes and dies.
->
-> So every LED needs a **series resistor**. The resistor takes the leftover voltage and sets the current. Most small LEDs are happy at 5 to 20 mA.
-
-**Key takeaway:** Diodes let current through one way only. An LED always needs a resistor to set its current.
-
-**Skills unlocked:** Pick the right resistor for any LED; Spot a diode that is in backwards
-
-**Q1.** You have a 5 V supply and a red LED (2 V), and you want 15 mA. Which resistor do you need?
-
-- Answer: **200 Ω** (±2%; units accepted: Ω, kΩ)
-- Hint: R = (Vsupply − Vled) ÷ I = (5 − 2) ÷ 0.015.
-- On a right answer: _(5 − 2) ÷ 0.015 = 200 Ω. The nearest standard value is 220 Ω, which gives about 13.6 mA._
-- If they enter 333.3 Ω: _That is 5 V ÷ 15 mA, as if the resistor got the whole supply. The LED already takes 2 V, so the resistor only gets the 3 V that is left._
-
-**Q2.** What does the series resistor actually set?
-
-- ✅ The current through the LED: _The LED sits near its threshold voltage. The resistor takes the rest of the supply, and that fixes the current._
-- ❌ The LED's colour: _Colour is set by the LED's material. The resistor only sets how much current flows, so how bright it is._
-- ❌ The LED's voltage: _The LED's own voltage stays close to its threshold whatever you do. The resistor takes the leftover voltage, and that sets the current._
-
-  Hint: The LED's voltage hardly changes. So what does the resistor control?
-
-**Q3 (do it in 3D).** Light the LED at between **10 and 20 mA** without burning it out.
-
-- Scene check: `ledSafe`
-- Hint: Put the resistor back and use the calculator: (supply − LED voltage) ÷ 0.015 is a good target.
-- On success: _Inside the comfortable range: bright, cool, and it will last for years._
-
-### 3.4 Transistors as switches (MOSFET) (8 min)
-
-**Opening prompt (before any reading):** Tap the microcontroller pin to switch the LED strip. Then drag the gate voltage to halfway and watch the MOSFET.
-
-**Water view:** yes (Real / Both / Water toggle)
-
-**Explanation**
-
-> A microcontroller pin can only supply a few milliamps, far too little for a motor or an LED strip. A **MOSFET** solves this: it is a switch controlled by voltage. A small voltage at its **gate** opens or closes a wide channel between **drain** and **source**, like a small hand turning a big tap.
->
-> Drive the gate fully on and the channel is almost a plain wire: amps flow and the MOSFET stays cool. Fully off, nothing flows. In between it is half-open, which means a resistor carrying lots of current, so it heats up fast.
->
-> Motors are coils, and a coil fights any sudden stop in its current. Switch one off and it kicks back a big voltage spike. A **flyback diode** across the coil gives that current a safe loop.
-
-**Key takeaway:** A small voltage at the gate controls a big current. Drive it fully on or fully off, and protect coils with a flyback diode.
-
-**Skills unlocked:** Let a tiny chip pin switch a motor or LED strip; Protect a switch from a motor's kickback
-
-**Q1.** Why should a MOSFET be driven fully on or fully off?
-
-- ✅ Half-on, it acts like a resistor carrying a big current, so it overheats: _Fully on there is almost no voltage across it, and fully off there is no current. Only in between are both large, and voltage × current is heat._
-- ❌ Half-on makes the load brighter: _Half-on gives the load less current, so it gets dimmer, and the MOSFET gets hot._
-- ❌ The gate draws too much current when half-on: _The gate draws almost no current at any voltage. The heat comes from the drain-to-source channel._
-
-  Hint: Watch the MOSFET's temperature as you move the gate slider through the middle.
-
-**Q2.** What does a flyback diode across a motor do?
-
-- ✅ It gives the motor's current a safe loop when the switch opens, so there is no voltage spike: _The coil keeps its current flowing for a moment. The diode lets it circle harmlessly through the motor until it dies away._
-- ❌ It makes the motor spin faster: _While the motor runs, the diode is reversed and does nothing. It only matters at switch-off._
-- ❌ It stops the motor from running backwards: _Direction is set by how the motor is wired. The diode only catches the switch-off kick._
-
-  Hint: What happens to a coil's current at the instant the switch opens?
-
-**Q3 (do it in 3D).** Switch the **motor** on, then off again **without a spark**.
-
-- Scene check: `motorOffSafe`
-- Hint: Choose the motor as the load, add the flyback diode, then switch on and off.
-- On success: _With the flyback diode in place, the coil's current circles through the diode and fades away calmly._
-
-### 3.5 Chips and microcontrollers (6 min)
-
-**Opening prompt (before any reading):** Pull the chip apart with the slider. Then tap a pin to make it an output and switch it on.
+**The one live formula:** `% wet = (DRY − reading) ÷ (DRY − WET) × 100`
 
 **Water view:** no
 
 **Explanation**
 
-> A **microcontroller** is a whole tiny computer in one package: a processor, memory for your program, and a set of pins. Most pins are **GPIO** (general-purpose input/output). Your code decides whether each pin is an input that reads a voltage or an output that drives one, HIGH or LOW.
+> Most sensors don't speak percent. The capacitive soil sensor puts out a voltage, and the ESP32's ADC turns it into a raw number from 0 to 4095. Odd but true: *wetter soil gives a lower number*.
 >
-> Inside the black plastic is a silicon die a few millimetres across, joined to the pins by bond wires thinner than a hair.
+> To turn raw numbers into something useful, **calibrate**: read the sensor in dry soil and in soaked soil, note both numbers, and scale every reading between them. Every sensor reads a little differently, so calibrate each one.
 >
-> Every chip has a **datasheet**, and the datasheet is the truth. Read the **absolute maximum ratings** table first: the limits that can destroy the chip if you go past them, even briefly. Normal operating values are lower still.
+> Two habits help. Power the sensor from a GPIO pin and switch it on only while reading, which saves battery. And take a few readings and average them, because single readings jitter.
 
-**Key takeaway:** A microcontroller is a tiny computer with pins for hands. The datasheet is the truth: never exceed the absolute maximum ratings.
+**Key takeaway:** Raw sensor numbers mean nothing until you calibrate: record dry and wet, then scale between them.
 
-**Skills unlocked:** Find a chip's limits in its datasheet
+**Skills unlocked:** Calibrate an analog sensor into useful units
 
-**Q1.** The datasheet says the absolute maximum on any pin is VDD + 0.3 V, and VDD is 3.3 V. Can you connect a 5 V signal straight to a pin?
+**Q1.** Your sensor reads 2900 in dry soil and 1300 in soaked soil. Now it reads 2300. How wet is the soil, in percent?
 
-- ✅ No: the limit is 3.6 V: _3.3 + 0.3 = 3.6 V, and 5 V is well past it. Use a divider or a level shifter._
-- ❌ Yes: chips can take a bit extra: _Some pins are "5 V tolerant", but only when the datasheet says so. This one does not._
-- ❌ Yes, as long as it is only brief: _Absolute maximum ratings apply even to short spikes. Exceeding them for a moment can still do damage._
+- Answer: **37.5 %** (±2%; units accepted: %)
+- Hint: Measure down from the dry reading: (2900 − 2300) ÷ (2900 − 1300) × 100.
+- On a right answer: _(2900 − 2300) ÷ 1600 × 100 = 37.5%. A bit on the dry side: time to water soon._
+- If they enter 62.5 %: _That is how *dry* it is. Wetter soil gives lower numbers, so measure down from the dry reading: (2900 − 2300) ÷ 1600._
+- If they enter 56.17 %: _That is the raw number as a share of 4095. Use the two calibration readings instead._
 
-  Hint: Work out VDD + 0.3 V, then compare it with 5 V.
+**Q2.** Why calibrate each soil sensor yourself, instead of copying the numbers from a tutorial?
 
-**Q2.** Open the datasheet below the scene. What is the **absolute maximum** current a single I/O pin may supply?
+- ✅ Every sensor, and every soil, reads a little differently: _Small differences in the board, the supply and the soil shift the raw numbers. Your own dry and wet readings are the only reliable reference._
+- ❌ Tutorials always use 5 V sensors: _Many do use 5 V, but even at the same voltage two sensors read differently. Calibrate each one._
+- ❌ Calibration makes the sensor more sensitive: _It does not change the sensor; it just maps its numbers to percent correctly._
 
-- Answer: **0.02 mA** (±1%; units accepted: mA, A)
-- Hint: Look in the "Absolute maximum ratings" table, on the "Current per I/O pin" row.
-- On a right answer: _20 mA is the never-exceed limit. Design for less: the recommended value is 8 mA._
-- If they enter 0.008 mA: _That is the recommended operating value. The never-exceed limit is in the absolute maximum ratings table._
+  Hint: Are two sensors, and two pots of soil, ever exactly alike?
 
-**Q3 (do it in 3D).** Make pin **PA5** an output and set it **HIGH**. The LED on that pin should light.
+**Q3 (do it in 3D).** Calibrate the sensor (record dry and wet), then bring the soil to **40–60%**.
 
-- Scene check: `pinHigh`
-- Hint: Tap the pin in 3D (or pick PA5 in the controls), choose Output, then HIGH.
-- On success: _PA5 now drives 3.3 V out through the LED's resistor. As an input, the same pin would only listen._
+- Scene check: `calibrated4060`
+- Hint: Let it dry fully and tap Record DRY, water it fully and tap Record WET. Then let it dry until the percent reads 40–60.
+- On success: _With two calibration points, the raw reading becomes a percent you can trust, and a threshold such as "water below 30%"._
 
-## Module 4: Digital basics
+### 3.4 5 V modules and a 3.3 V ESP32 (7 min)
 
-_How chips turn voltages into 1s and 0s, and how they talk to each other._
-
-### 4.1 Logic levels (1s and 0s are voltage ranges) (5 min)
-
-**Opening prompt (before any reading):** Drag the input voltage up slowly and watch where each chip changes its mind.
-
-**The one live formula:** `HIGH threshold = 0.7 × VDD`
+**Opening prompt (before any reading):** Drag the sensor's output voltage up and watch how the ESP32 reads it. Then find out what happens above 3.6 V.
 
 **Water view:** no
 
 **Explanation**
 
-> Digital chips think in 1s and 0s, but a wire only carries a voltage. So each chip uses **ranges**: anything near 0 V counts as LOW (0), anything near its supply voltage counts as HIGH (1).
+> ESP32 pins are 3.3 V pins. They read anything above about 2.5 V as HIGH and below about 0.8 V as LOW; in between, they may go either way. The absolute maximum is 3.6 V: more than that slowly cooks the pin.
 >
-> Between them is a no-man's land. A voltage there might be read either way, and the reading can flip from moment to moment. Good signals spend almost no time there.
+> Many cheap modules run on 5 V, and their outputs swing all the way to 5 V. Wired straight to the ESP32, one may work for a while, and then the pin dies.
 >
-> The thresholds scale with the chip's supply voltage, VDD. A common rule: HIGH is above 0.7 × VDD and LOW is below 0.3 × VDD. For a 3.3 V chip that means above 2.31 V and below 0.99 V. A 5 V chip needs 3.5 V for HIGH, which a 3.3 V output can never reach. Then you need a **level shifter**.
+> For a signal coming *into* the ESP32, a voltage divider is the simple fix: 1 kΩ on top and 2 kΩ below turns 5 V into 3.3 V. For two-way signals such as I2C, use a small level-shifter board. Simplest of all: choose modules that run on 3.3 V.
 
-**Key takeaway:** 1s and 0s are voltage ranges set by each chip's supply. Check that one chip's HIGH is high enough for the other.
+**Key takeaway:** Never feed 5 V into an ESP32 pin. Scale it down with a divider or a level shifter, or pick 3.3 V modules.
 
-**Skills unlocked:** Check whether two chips can talk without a level shifter
+**Skills unlocked:** Connect a 5 V module to a 3.3 V ESP32 without damaging it
 
-**Q1.** Why might a 3.3 V output fail to drive a 5 V input?
+**Q1.** The ESP32 reads HIGH above 0.75 × its 3.3 V supply. What is that threshold?
 
-- ✅ The 5 V chip needs about 3.5 V to see HIGH, and 3.3 V falls short: _0.7 × 5 V = 3.5 V. A 3.3 V HIGH lands in the undefined zone, so the 5 V chip may read it either way._
-- ❌ The 3.3 V output gets damaged: _Driving an input does not hurt the output. The problem is the receiver's threshold._
-- ❌ 5 V chips only understand exactly 5 V: _Every chip reads a range, not one exact value. The 5 V chip's HIGH range just starts above 3.3 V._
+- Answer: **2.475 V** (±1%; units accepted: V)
+- Hint: Multiply: 0.75 × 3.3 V.
+- On a right answer: _0.75 × 3.3 V = 2.475 V, about 2.5 V. A 3.3 V output easily clears it, and so does 5 V, which is exactly the danger._
+- If they enter 3.75 V: _That is 0.75 × 5 V. The ESP32 runs on 3.3 V._
 
-  Hint: Work out 0.7 × 5 V and compare it with 3.3 V.
+**Q2.** A 5 V sensor's output goes through 1 kΩ (top) and 2 kΩ (bottom) to the ESP32 pin. What does the pin see when the sensor outputs 5 V?
 
-**Q2.** A 3.3 V chip reads HIGH above 0.7 × its supply. What is that threshold?
+- ✅ 3.33 V: _5 V × 2 kΩ ÷ 3 kΩ ≈ 3.33 V: a clear HIGH, under the 3.6 V limit._
+- ❌ 1.67 V: _That is the voltage across the top 1 kΩ resistor (5 V × 1 ÷ 3). The pin sits across the bottom one._
+- ❌ 2.5 V: _Halving needs two equal resistors. Here the bottom one is twice the top one._
+- ❌ 5 V: _A divider always lowers the voltage; that is its job._
 
-- Answer: **2.31 V** (±0.5%; units accepted: V, mV)
-- Hint: Multiply: 0.7 × 3.3.
-- On a right answer: _0.7 × 3.3 = 2.31 V. Anything above that is a 1._
-- If they enter 0.99 V: _That is the LOW threshold, 0.3 × 3.3. HIGH uses 0.7._
+  Hint: Vout = Vin × R2 ÷ (R1 + R2), with R2 the bottom resistor.
 
-**Q3 (do it in 3D).** Find an input voltage that the **3.3 V chip** reads as HIGH but the **5 V chip** does not.
+**Q3 (do it in 3D).** Connect the 5 V sensor so that its HIGH reads as **HIGH** on the ESP32, without going over the **3.6 V** limit.
 
-- Scene check: `between`
-- Hint: You need to be above 2.31 V but below 3.5 V.
-- On success: _Between 2.31 V and 3.5 V the two chips disagree. That gap is exactly why 3.3 V and 5 V parts sometimes need a level shifter._
+- Scene check: `safeHigh`
+- Hint: Turn the divider on, then set the sensor's output to its HIGH level, 5 V.
+- On success: _Through the divider, the sensor's 5 V arrives as about 3.33 V: a solid HIGH, safely under 3.6 V._
 
-### 4.2 Pull-up resistors, floating inputs and button bounce (7 min)
+## Module 4: Outputs: making things happen
 
-**Opening prompt (before any reading):** Don't touch the button: watch the pin's reading on its own. Then add the pull-up resistor.
+_LEDs, PWM, and switching a pump or a relay without hurting the ESP32._
 
-**Water view:** yes (Real / Both / Water toggle)
+### 4.1 LEDs and PWM brightness (6 min)
 
-**Explanation**
-
-> An input pin with nothing connected is **floating**. It is not tied to any voltage, so it drifts and picks up noise from nearby wires, even from your hand, and reads random 1s and 0s.
->
-> The fix is a **pull-up resistor**, typically 10 kΩ, from the pin to the supply. It gently holds the pin HIGH. Pressing the button connects the pin straight to ground, which easily beats the weak pull-up, so the pin reads LOW. Pressed is 0, released is 1.
->
-> Buttons have one more trick: their metal contacts **bounce**, making and breaking contact several times within a few milliseconds. A fast chip sees one press as several. Software **debouncing** waits for the signal to settle, for example 20 ms, before believing it.
-
-**Key takeaway:** Never leave an input floating: use a pull-up (or pull-down) resistor. Debounce buttons in software.
-
-**Skills unlocked:** Wire a button so it reads reliably
-
-**Q1.** A button connects a pin to ground, and there is no pull-up. The button is not pressed. What does the pin read?
-
-- ❌ HIGH: _Only if something holds it HIGH. With nothing connected, it just drifts._
-- ❌ LOW: _The button is open, so nothing connects the pin to ground either._
-- ✅ Random noise: the pin is floating: _Nothing holds the pin at any voltage, so it drifts and reads random values._
-
-  Hint: With the button open, what is the pin connected to?
-
-**Q2.** With a 10 kΩ pull-up to 3.3 V and the button to ground, what does the pin read while the button is pressed?
-
-- ✅ LOW: _The button ties the pin directly to 0 V, which overpowers the weak pull-up._
-- ❌ HIGH: _That is the reading with the button released._
-- ❌ It shorts the supply: _The 10 kΩ resistor limits the current to 3.3 V ÷ 10 kΩ = 0.33 mA. Nothing is shorted._
-
-  Hint: Pressing the button wires the pin straight to 0 V.
-
-**Q3 (do it in 3D).** Make one press of the button count **exactly once** on the counter.
-
-- Scene check: `onePress`
-- Hint: You need two fixes: a pull-up so the pin does not float, and debouncing so the bounces are ignored. Then reset the counter and press once.
-- On success: _Pull-up for a clean idle level, debounce for a clean press: one press, one count._
-
-### 4.3 How chips talk (I2C, SPI, UART) (6 min)
-
-**Opening prompt (before any reading):** Pick a bus and press Send. Watch which wires carry the message.
+**Opening prompt (before any reading):** Slide the duty cycle and watch the pin switch on and off. Then tap the LED to flip it around.
 
 **Water view:** no
 
 **Explanation**
 
-> Chips on a board talk constantly: a microcontroller reads a sensor, updates a display, chats with a radio. Three simple "languages" cover most of it, and you only need to recognise them.
+> An ESP32 pin is either fully on (3.3 V) or fully off (0 V). To dim an LED, it switches on and off very fast, thousands of times a second. This is **PWM**, pulse-width modulation. The **duty cycle** is the share of time it is on: at 25% the LED looks about a quarter as bright, because your eye averages the flicker.
 >
-> **I2C** uses two shared wires, SDA (data) and SCL (clock), for many chips at once. Each chip has an **address**, and every message starts with the address of the chip it is meant for.
+> In Arduino code, `analogWrite(pin, value)` sets it, with 0–255 meaning 0–100%. The same trick sets a motor's speed or a fan's.
 >
-> **SPI** uses a clock, a data-out wire and a data-in wire, plus one **chip-select** wire per chip to say who should listen. More wires, but very fast. Common for displays and memory.
->
-> **UART** is a simple chat between exactly two devices: each one's TX (transmit) goes to the other's RX (receive). There is no clock; both sides agree on the speed in advance.
+> An LED only conducts one way. The long leg (+) goes towards the pin, the short leg by the flat edge towards GND. Fitted backwards it just stays dark; at 3.3 V no harm is done.
 
-**Key takeaway:** I2C: two shared wires plus addresses. SPI: fast, with one select line per chip. UART: two devices, TX crossed to RX.
+**Key takeaway:** PWM dims by switching fast: the duty cycle sets the average. LEDs work one way round only.
 
-**Skills unlocked:** Recognise I2C, SPI and UART on a schematic
+**Skills unlocked:** Dim an LED or slow a motor with PWM; Fit an LED the right way round
 
-**Q1.** Which bus lets several chips share just two wires, picking the right chip by its address?
+**Q1.** With PWM at a 25% duty cycle, what is the *average* voltage on a 3.3 V pin?
 
-- ✅ I2C: _SDA and SCL are shared by every chip, and the address at the start of each message says who should answer._
-- ❌ SPI: _SPI picks the chip with a separate chip-select wire per chip, so it needs more wires._
-- ❌ UART: _UART links exactly two devices. There is no addressing._
+- Answer: **0.825 V** (±1%; units accepted: V)
+- Hint: On for a quarter of the time at 3.3 V, off the rest: 0.25 × 3.3 V.
+- On a right answer: _0.25 × 3.3 V ≈ 0.83 V on average. The pin is still only ever 0 V or 3.3 V; it is the average your eye sees._
+- If they enter 2.475 V: _That is the share of time it is *off* (75%). Use the on share: 25%._
 
-  Hint: Which one starts every message with an address?
+**Q2.** Your new status LED stays dark. The pin works and the resistor is fine. What is the most likely mistake?
 
-**Q2.** On a UART link, what does the microcontroller's TX pin connect to?
+- ✅ The LED is in backwards: _Flip it: long leg (+) towards the pin, flat edge towards GND._
+- ❌ The PWM frequency is too high: _Fast PWM is exactly what makes the flicker invisible. The LED is most likely backwards._
+- ❌ LEDs need 5 V: _A red LED needs only about 2.0 V, so 3.3 V is plenty. Check which way round it is._
 
-- ✅ The other device's RX: _Transmit goes to receive, in both directions: TX to RX and RX to TX._
-- ❌ The other device's TX: _Then both transmitters talk into each other and nobody listens. TX must cross over to RX._
-- ❌ Ground: _The grounds are joined too, but the data travels from TX to the other side's RX._
+  Hint: LEDs only conduct one way.
 
-  Hint: One side talks, the other side listens.
+**Q3 (do it in 3D).** Dim the LED to a duty cycle of **20–30%**, with the LED fitted the right way round.
 
-**Q3 (do it in 3D).** Using the bus where both sensors share the same two wires, send a request to the sensor at address **0x48**.
+- Scene check: `dim2030`
+- Hint: Slide the duty cycle down to about a quarter. If it is dark, tap the LED to flip it.
+- On success: _Around 25% duty, the LED glows gently: a nice night-time status light that also saves power._
 
-- Scene check: `i2cSend`
-- Hint: Choose I2C, pick the temperature sensor (0x48), and press Send.
-- On success: _Both sensors saw the message on the shared wires, but only 0x48 recognised its address and answered._
+### 4.2 A MOSFET switch for the pump (8 min)
 
-## Module 5: Powering things
-
-_Batteries, regulators and the little capacitors that keep chips happy._
-
-### 5.1 Batteries and power budgets (6 min)
-
-**Opening prompt (before any reading):** Switch parts on and off and watch the battery drain. Time runs fast here: one second is one hour.
-
-**The one live formula:** `Battery life (h) = capacity (mAh) ÷ average current (mA)`
+**Opening prompt (before any reading):** Try running the pump straight from GPIO 26. Then switch it through the MOSFET, and drag the gate voltage to halfway.
 
 **Water view:** yes (Real / Both / Water toggle)
 
 **Explanation**
 
-> A battery's **capacity** is printed in milliamp-hours (mAh): how many milliamps it can supply, for how many hours. A 2000 mAh cell gives 20 mA for 100 hours, or 200 mA for 10 hours.
+> Plant Buddy's pump needs about 150 mA at 5 V. A GPIO pin gives 3.3 V and about 20 mA. Wire the pump straight to the pin and it won't start, and the pin is badly overloaded.
 >
-> To estimate battery life, add up the **average** current of everything that is on, then divide the capacity by it. Real life gives a bit less, so leave a margin.
+> A **MOSFET** is an electronic switch. The pin only puts a voltage on its **gate**; almost no current flows into it. The pump's big current flows from the 5 V supply through the MOSFET's **drain** and **source** to GND. Choose a *logic-level* MOSFET, one that switches fully on at 3.3 V.
 >
-> Averages hide peaks. A radio might sleep at almost nothing, then burst at 800 mA for a few milliseconds. The battery and everything in the power path must handle that **peak**, or the voltage sags and the chip resets.
+> Drive it fully on or fully off. Half-on, it acts like a resistor and heats up. A 10 kΩ resistor from gate to GND keeps the pump off while the ESP32 boots.
+
+**Key takeaway:** A pin controls, a MOSFET carries: use a logic-level MOSFET for anything over about 20 mA.
+
+**Skills unlocked:** Switch a pump or motor from a GPIO pin with a MOSFET
+
+**Q1.** Why can't the 5 V pump run straight from a GPIO pin?
+
+- ✅ It needs about 150 mA at 5 V; a pin gives 3.3 V and about 20 mA: _Too little voltage and far too little current. The pin can control the pump, but not power it._
+- ❌ Pumps only run on AC: _Small hobby pumps run on DC. The problem is the current a pin can give._
+- ❌ The pin is input-only: _GPIO 26 can be an output. It just cannot supply 150 mA._
+
+  Hint: Compare what the pump needs with what a pin can give.
+
+**Q2.** Why should the MOSFET be driven fully on or fully off, never halfway?
+
+- ✅ Half-on, it acts like a resistor and heats up: _Fully on it has almost no resistance, and fully off no current flows. In between, current and voltage meet in the MOSFET and turn into heat._
+- ❌ Halfway, the ESP32 resets: _The ESP32 is fine; it is the MOSFET that suffers, getting hot._
+- ❌ It would run the pump backwards: _A DC pump only runs one way here. The danger is heat in the MOSFET._
+
+  Hint: Watch the MOSFET's temperature when the gate is at half voltage.
+
+**Q3 (do it in 3D).** Run the pump from GPIO 26 **through the MOSFET**, fully on, without overheating anything.
+
+- Scene check: `pumpOn`
+- Hint: Choose the MOSFET wiring, set the gate to 3.3 V (pin HIGH) and switch on.
+- On success: _At 3.3 V on the gate, a logic-level MOSFET is fully on and stays cool, while the pump gets its 150 mA from the 5 V supply._
+
+### 4.3 Motors, relays and flyback diodes (7 min)
+
+**Opening prompt (before any reading):** Switch the pump on and then off, and watch the MOSFET. Then fit the diode and try again.
+
+**Water view:** yes (Real / Both / Water toggle)
+
+**Explanation**
+
+> A motor's coil stores energy while current flows. Switch it off suddenly and that energy has to go somewhere: the voltage across the coil spikes to dozens of volts, which can destroy the MOSFET or reset the ESP32.
 >
-> A lithium-ion cell's voltage also falls as it empties: about 4.2 V when full and 3.0 V when empty. Your circuit has to keep working across that whole range.
+> A **flyback diode** across the motor gives the current a safe loop to fade away in. It sits backwards (stripe towards +), so it does nothing while the motor runs. Pumps, motors, solenoid valves and relay coils all need one.
+>
+> A **relay module** is a switch flipped by an electromagnet, with the ESP32 side and the load side kept apart. Ready-made modules include the diode. In this course, relays switch low voltages only; for mains, buy a certified smart plug.
 
-**Key takeaway:** Battery life is capacity divided by average current. Size the power path for the peak current.
+**Key takeaway:** Every motor, pump, valve or relay coil needs a flyback diode across it, stripe towards +.
 
-**Skills unlocked:** Estimate battery life from a power budget; Size a supply for peak current, not the average
+**Skills unlocked:** Protect the ESP32 from motor kickback with a flyback diode; Choose a safe way to switch bigger loads
 
-**Q1.** A device draws 25 mA on average from a 2000 mAh battery. Ideally, how many hours will it last?
+**Q1.** What does a flyback diode across the pump do?
 
-- Answer: **80 hours** (±1%; units accepted: hours, days)
-- Hint: Hours = mAh ÷ mA.
-- On a right answer: _2000 ÷ 25 = 80 hours, a little over 3 days. Expect somewhat less in practice._
-- If they enter 50000 hours: _That is capacity × current. Divide instead: 2000 mAh ÷ 25 mA._
+- ✅ Gives the coil's current a safe loop at switch-off, so no voltage spike: _The current keeps circling through the diode and fades away, instead of forcing a spike across the MOSFET._
+- ❌ Makes the pump run faster: _While running, the diode is reverse-biased and does nothing at all._
+- ❌ Stops the pump running backwards: _A DC pump only runs one way here. The diode is about the switch-off spike._
 
-**Q2.** A sensor averages 20 mA, but its radio bursts at 800 mA. What current should the power supply be able to deliver?
+  Hint: What happens to the coil's energy at switch-off?
 
-- ✅ 800 mA: the peak: _If the supply cannot deliver the burst, the voltage sags exactly when the radio needs it and the chip may reset. Battery life still depends on the 20 mA average._
-- ❌ 20 mA: the average: _The average sets battery life, but during each burst the supply really has to deliver 800 mA._
-- ❌ 410 mA: halfway between: _There is no averaging at the moment of the burst: the full 800 mA is needed right then._
+**Q2.** You want Plant Buddy to switch a mains (230 V or 120 V) grow lamp. What is the safe choice?
 
-  Hint: What happens if the supply cannot deliver what the radio asks for, at the moment it asks?
+- ✅ A certified smart plug, controlled over Wi-Fi: _All the dangerous wiring is inside a tested, sealed product. Your ESP32 just sends it a message._
+- ❌ A relay module wired into the lamp cable: _That puts mains voltage on an open hobby board, a real shock and fire risk. Use a certified smart plug._
+- ❌ A bigger MOSFET: _MOSFET circuits for mains are for experienced designers only. Use a certified smart plug._
 
-**Q3 (do it in 3D).** Change the settings so the 2000 mAh battery would last **more than one week** (168 hours).
+  Hint: This course stays at 5 V and below for a reason.
 
-- Scene check: `week`
-- Hint: You need an average below 2000 ÷ 168 ≈ 11.9 mA. The LED and the always-listening radio are the big spenders. Try sleep mode too.
-- On success: _Sleeping most of the time and only waking the radio for short bursts is how gadgets run for months on one battery._
+**Q3 (do it in 3D).** Switch the pump **on**, then **off** again **without a spike**.
 
-### 5.2 Regulators (linear vs switching) (7 min)
+- Scene check: `offNoSpark`
+- Hint: Fit the flyback diode first, stripe towards +5 V.
+- On success: _With the diode in place, the coil's current fades safely through it, and the MOSFET never sees the spike._
 
-**Opening prompt (before any reading):** Power the 5 V load from 12 V with each kind of regulator. Watch which one gets hot.
+## Module 5: Talking to sensors
+
+_Datasheets, I2C, UART and SPI: how modules and the ESP32 understand each other._
+
+### 5.1 Reading a module's pinout and datasheet (7 min)
+
+**Opening prompt (before any reading):** Tap each pin on the BME280 board to see what it does, and check its facts sheet below. Then wire it to the ESP32.
+
+**Water view:** no
+
+**Explanation**
+
+> Before you wire any module, find four facts on its product page or datasheet: the **supply voltage**, the **logic level**, **how it talks** (I2C and its address, SPI, UART or analog) and the **current** it draws.
+>
+> For Plant Buddy's BME280 board: supply 3.3 V (this version has no regulator, so 5 V would damage it), 3.3 V logic, I2C at address 0x76, and only a few microamps when it measures once a second. Ideal for a battery device.
+>
+> The pin names are printed on the board. On the ESP32, the default I2C pins are D21 (**SDA**, data) and D22 (**SCL**, clock). Wire VIN, GND, SCL and SDA, and it is ready.
+
+**Key takeaway:** Check supply voltage, logic level, interface and current before you wire any module.
+
+**Skills unlocked:** Find the four key facts in a module's datasheet; Wire an I2C sensor module to the ESP32
+
+**Q1.** The module's page says "VIN: 3.3 V only". Where do you connect VIN?
+
+- ✅ The ESP32's 3V3 pin: _The 3V3 pin gives a regulated 3.3 V, exactly what the module wants._
+- ❌ The ESP32's VIN pin: _On USB power, the VIN pin carries 5 V, which would damage a 3.3 V-only module._
+- ❌ Any GPIO pin set HIGH: _It would give 3.3 V, but only for small currents. Use the 3V3 pin for power._
+
+  Hint: Which ESP32 pin carries 3.3 V, and which carries the USB's 5 V?
+
+**Q2.** Which fact tells you the BME280 is a good fit for a battery-powered Plant Buddy?
+
+- ✅ It draws only a few microamps when measuring once a second: _Microamps barely touch a battery, so the sensor can stay connected all the time._
+- ❌ It uses I2C: _I2C saves pins, not energy. The tiny current draw is what suits a battery._
+- ❌ It is purple: _The board colour tells you nothing about current draw._
+
+  Hint: What matters most when the energy comes from a battery?
+
+**Q3 (do it in 3D).** Wire the BME280 to the ESP32: power, GND and the two I2C pins.
+
+- Scene check: `wireBme`
+- Hint: VIN → 3V3, GND → GND, SCL → D22, SDA → D21.
+- On success: _Power from 3V3, a shared GND, and the two I2C wires on the ESP32's default pins. The sensor answers at 0x76._
+
+### 5.2 I2C: two wires, many sensors (8 min)
+
+**Opening prompt (before any reading):** Call an address and watch which sensor answers. Then add a second BME280 and make both work.
+
+**Water view:** no
+
+**Explanation**
+
+> **I2C** lets many sensors share just two wires: **SDA** (data) and **SCL** (clock), plus power and GND. On the ESP32 they are D21 and D22 by default.
+>
+> Every device on the bus has an **address**, a number such as 0x76. The ESP32 calls an address, and only that device answers. Two devices with the same address answer at once, and you get garbage.
+>
+> Many boards let you change the address, often with a solder jumper or a spare pin: the BME280 can be 0x76 or 0x77. Run an *I2C scanner* sketch first; it lists every address it finds.
+>
+> Both wires need pull-up resistors, and most modules already have them.
+
+**Key takeaway:** I2C: two shared wires, one unique address per device. Clashing addresses mean garbage.
+
+**Skills unlocked:** Wire several I2C sensors to one ESP32; Fix an I2C address clash
+
+**Q1.** Which bus lets several sensors share just two wires, picking each one by its address?
+
+- ✅ I2C: _SDA and SCL are shared by every device, and each device answers only to its own address._
+- ❌ SPI: _SPI needs a separate chip-select wire for each device, so the wire count grows._
+- ❌ UART: _UART is a conversation between exactly two devices._
+
+  Hint: Which one has addresses?
+
+**Q2.** You add a second BME280 to the bus, and now both read nonsense. Why?
+
+- ✅ Both answer at the same address, 0x76, talking over each other: _Change one board to 0x77 (its address jumper) and both work._
+- ❌ The bus can only carry one sensor: _I2C carries many sensors, as long as each has its own address._
+- ❌ The 3V3 pin cannot power two sensors: _Two BME280s draw only microamps. The problem is the shared address._
+
+  Hint: What is the default address of every BME280 board?
+
+**Q3 (do it in 3D).** Add a second BME280 and make **both sensors answer** correctly.
+
+- Scene check: `twoBme`
+- Hint: Set the new board's address jumper to 0x77, then call each address.
+- On success: _One sensor at 0x76, one at 0x77: each answers only to its own address, on the same two wires._
+
+### 5.3 UART and SPI at a glance (6 min)
+
+**Opening prompt (before any reading):** Pick a bus and press Send, and watch which wires carry the message. Then get the GPS module talking.
+
+**Water view:** no
+
+**Explanation**
+
+> **UART** (serial) is a conversation between two devices. Each has a **TX** (transmit) and an **RX** (receive) pin, and you cross them: GPS TX to ESP32 RX, ESP32 TX to GPS RX. Both must use the same speed, such as 9600 baud. The ESP32's spare UART uses D16 (RX2) and D17 (TX2).
+>
+> **SPI** is the fast one, used by SD cards and displays. It has a clock, a data wire in each direction and one **CS** (chip select) wire per device: the ESP32 pulls a device's CS LOW to talk to it.
+>
+> Rule of thumb: sensors are usually I2C, GPS and modems UART, screens and SD cards SPI.
+
+**Key takeaway:** UART: cross TX and RX, and match the speed. SPI: fast, with one CS wire per device.
+
+**Skills unlocked:** Wire a UART module such as a GPS; Recognise which bus a module uses
+
+**Q1.** On a UART link, what does the GPS module's TX pin connect to?
+
+- ✅ The ESP32's RX pin: _One side's transmit goes to the other side's receive._
+- ❌ The ESP32's TX pin: _Two transmitters wired together would both talk and nobody would listen. Cross them._
+- ❌ SDA: _SDA belongs to I2C. UART uses TX and RX._
+
+  Hint: Someone talking needs someone listening.
+
+**Q2.** Your GPS module prints garbled characters, but the wiring is right. What is the likely cause?
+
+- ✅ The baud rates don't match, for example 9600 on the GPS and 115200 in your code: _Different speeds chop every character up wrongly. Set the same baud rate on both sides._
+- ❌ The GPS needs an I2C address: _UART has no addresses. Check the baud rate._
+- ❌ TX and RX should not be crossed: _They should be crossed, and the wiring is right. The speed is the problem._
+
+  Hint: Both sides of a UART must agree on something before they talk.
+
+**Q3 (do it in 3D).** Get the GPS module talking to the ESP32: wire its TX correctly and match the speed.
+
+- Scene check: `gpsTalk`
+- Hint: GPS TX → D16 (RX2), and set the speed to 9600 baud, the GPS default.
+- On success: _TX crossed to RX and both sides at 9600 baud: position data comes through cleanly._
+
+## Module 6: Power for a device that lasts
+
+_USB, batteries, regulators, Wi-Fi bursts and deep sleep._
+
+### 6.1 Powering an ESP32: USB, VIN, 3V3 and batteries (7 min)
+
+**Opening prompt (before any reading):** Pick a power source and the pin it goes into, and watch the 3.3 V rail. Then find a safe way to run Plant Buddy from the 18650 battery.
+
+**Water view:** no
+
+**Explanation**
+
+> The ESP32 chip needs 3.0 to 3.6 V. A DevKit board gives you three ways in. **USB** is the easiest: 5 V goes into the board's regulator, which makes 3.3 V. The **VIN** pin takes the same route for a 5 V supply. The **3V3** pin skips the regulator, so feed it only a clean, regulated 3.3 V.
+>
+> Batteries are trickier. A Li-ion cell gives 4.2 V when full and about 3.0 V when empty. The board's AMS1117 regulator needs about 1.1 V of headroom, so through VIN a half-empty cell leaves the ESP32 starved. Wired straight to 3V3, a full cell's 4.2 V is over the 3.6 V limit.
+>
+> The fix: a low-dropout 3.3 V regulator module between the cell and the 3V3 pin. And never power from USB and VIN at the same time.
+
+**Key takeaway:** USB or 5 V into VIN; only regulated 3.3 V into 3V3. A Li-ion cell needs a low-dropout regulator.
+
+**Skills unlocked:** Choose a safe way to power an ESP32; Run an ESP32 from a Li-ion battery
+
+**Q1.** The board's regulator needs its input to be 1.1 V above its 3.3 V output. What is the lowest VIN that still gives a full 3.3 V?
+
+- Answer: **4.4 V** (±1%; units accepted: V)
+- Hint: The input has to be the output plus the headroom: 3.3 V + 1.1 V.
+- On a right answer: _3.3 V + 1.1 V = 4.4 V. A Li-ion cell (4.2 V full) is already below that, which is why it needs a low-dropout regulator instead._
+- If they enter 2.2 V: _That is 3.3 V − 1.1 V. The regulator needs *more* at its input than its output: add the headroom._
+
+**Q2.** Why not wire a full 18650 cell (4.2 V) straight to the 3V3 pin?
+
+- ✅ 4.2 V is over the ESP32's 3.6 V maximum: _The 3V3 pin goes straight to the chip, with no regulator in between. 4.2 V can damage it._
+- ❌ It would work, but drain the cell faster: _The real problem is damage: 4.2 V is over the chip's 3.6 V limit._
+- ❌ The 3V3 pin only works with USB connected: _The 3V3 pin accepts any clean 3.3 V supply. The cell's 4.2 V is simply too high._
+
+  Hint: Compare the cell's voltage with the ESP32's maximum.
+
+**Q3 (do it in 3D).** Power Plant Buddy from the 18650 cell so that the rail stays between **3.0 and 3.6 V** whether the cell is full or nearly empty.
+
+- Scene check: `batterySafe`
+- Hint: Try the cell through the low-dropout regulator module into 3V3, and drag the cell from full to empty.
+- On success: _The low-dropout regulator needs only about 0.2 V of headroom, so from 4.2 V down to about 3.5 V the rail stays at 3.3 V, and the chip is never over its limit._
+
+### 6.2 Wi-Fi bursts, brownouts and capacitors (7 min)
+
+**Opening prompt (before any reading):** Turn Wi-Fi on and watch the 3.3 V rail dip with every burst. Then fit a capacitor and move it close to the ESP32.
+
+**Water view:** yes (Real / Both / Water toggle)
+
+**Explanation**
+
+> Most of the time an ESP32 sips current. But when Wi-Fi transmits, it gulps about 250 mA in short bursts. A long thin USB cable, breadboard jumpers or a weak battery can't deliver that instantly, so the 3.3 V rail dips.
+>
+> If it dips too far, the chip's **brownout detector** resets it to stay safe. The serial monitor shows "Brownout detector was triggered", and the board reboots every time it tries to connect.
+>
+> The fix is an energy store right next to the chip: a **capacitor** of a few hundred microfarads between 3V3 and GND, as close to the pins as you can. During a burst it supplies the current, and the supply refills it in between. A 100 nF ceramic beside it catches the fastest spikes.
+
+**Key takeaway:** Wi-Fi bursts need a big capacitor right at the ESP32's 3V3 and GND pins.
+
+**Skills unlocked:** Stop brownout resets during Wi-Fi
+
+**Q1.** Your ESP32 reboots every time it connects to Wi-Fi, and the serial monitor says "Brownout detector was triggered". What is the most likely cause?
+
+- ✅ The supply can't deliver the Wi-Fi current bursts, so the voltage dips: _Each burst pulls the rail down; when it falls below the brownout level, the chip resets. A capacitor at the pins fixes it._
+- ❌ The Wi-Fi password is wrong: _A wrong password just fails to connect; it does not reset the chip. A brownout is a power problem._
+- ❌ The code has an endless loop: _That would trigger a watchdog reset, with a different message. "Brownout" means the voltage dipped._
+
+  Hint: What changes the moment Wi-Fi starts transmitting?
+
+**Q2.** Where should the capacitor go?
+
+- ✅ Right at the ESP32's 3V3 and GND pins: _Close by, it supplies each burst before the long wiring even notices._
+- ❌ At the far end of the breadboard, where the power comes in: _Then each burst still has to travel along the jumpers and rails, and the dip comes back._
+- ❌ In series with the 3V3 wire: _A capacitor in series would block the supply. It goes *across* 3V3 and GND._
+
+  Hint: What happened to the dip as you moved the capacitor?
+
+**Q3 (do it in 3D).** Stop the brownout resets: keep the rail **above 3.0 V** during Wi-Fi bursts.
+
+- Scene check: `noBrownout`
+- Hint: Fit a big capacitor (a few hundred microfarads) and place it right at the ESP32.
+- On success: _A big capacitor at the pins covers each burst, so the rail barely dips and the ESP32 stays connected._
+
+### 6.3 Battery life and deep sleep (8 min)
+
+**Opening prompt (before any reading):** Change how often Plant Buddy wakes up and watch the battery drain. Time runs fast here: one second is one day.
+
+**Water view:** yes (Real / Both / Water toggle)
+
+**Explanation**
+
+> Battery capacity is given in **milliamp-hours** (mAh). A 2500 mAh cell can supply 2500 mA for one hour, or 25 mA for 100 hours. Battery life ≈ capacity ÷ average current.
+>
+> An ESP32 with Wi-Fi on draws about 100 mA, so a 2500 mAh cell would be flat in about a day. The trick is **deep sleep**: the chip switches almost everything off, wakes on a timer, measures, sends, and sleeps again. Asleep, the chip draws about 10 µA.
+>
+> So the *average* current counts, set by how long and how often you are awake. One catch: a DevKit's USB chip, regulator and power LED keep drawing a few milliamps while the ESP32 sleeps. For battery projects, use a low-power board.
+
+**Key takeaway:** Battery life ≈ mAh ÷ average current. Sleep most of the time, wake briefly, and watch what the board itself draws.
+
+**Skills unlocked:** Estimate battery life from a wake-sleep cycle; Use deep sleep to make a battery last months
+
+**Q1.** Plant Buddy averages 25 mA from a 2500 mAh battery. Ideally, how many hours will it last?
+
+- Answer: **100 h** (±1%; units accepted: h)
+- Hint: Battery life = capacity ÷ average current = 2500 mAh ÷ 25 mA.
+- On a right answer: _2500 mAh ÷ 25 mA = 100 hours, about four days. Real batteries give a bit less._
+- If they enter 62500 h: _That is 2500 × 25. Divide instead: capacity ÷ current._
+- If they enter 0.01 h: _That is 25 ÷ 2500, upside down. Capacity goes on top: 2500 mAh ÷ 25 mA._
+
+**Q2.** Asleep, the ESP32 chip draws 10 µA, but your DevKit board still draws 5 mA. Why?
+
+- ✅ The board's USB chip, regulator and power LED stay on: _They are not part of the ESP32 and know nothing about deep sleep. Low-power boards leave them out._
+- ❌ Deep sleep does not work on DevKit boards: _The ESP32 sleeps fine. It is the extra parts on the board that keep drawing current._
+- ❌ The battery leaks 5 mA: _Batteries self-discharge far more slowly than that. The board's extra parts are to blame._
+
+  Hint: The ESP32 is not the only thing on the board.
+
+**Q3 (do it in 3D).** Change the settings so the 2500 mAh battery would last **more than 90 days**.
+
+- Scene check: `over90days`
+- Hint: Use deep sleep, a low-power board, and wake up less often.
+- On success: _Waking every 10 minutes for 5 seconds on a low-power board averages under 1 mA: about four months on one charge._
+
+### 6.4 Regulators: LDO or buck? (6 min)
+
+**Opening prompt (before any reading):** Power the 5 V pump and board from the 12 V solar battery with each kind of regulator. Watch which one gets hot.
 
 **The one live formula:** `Heat = (Vin − Vout) × I`
 
-**Water view:** yes (Real / Both / Water toggle)
+**Water view:** no
 
 **Explanation**
 
-> Most circuits need one steady voltage, but batteries and adapters supply something else, so a **regulator** sits in between.
+> An outdoor Plant Buddy might run from a 12 V solar battery, but its board and pump need 5 V. A **regulator** sits in between.
 >
-> A **linear regulator** (the common kind is called an LDO) works like a tap that throttles away the extra pressure. It is simple, quiet and cheap, but it burns the difference as heat. Dropping 12 V to 5 V at half an amp wastes more power than the load uses.
+> A **linear regulator** (an LDO) works like a tap that throttles away the extra pressure. It is simple, quiet and cheap, but it burns the difference as heat. Dropping 12 V to 5 V at half an amp wastes more power than the load uses.
 >
-> A **switching regulator** (a buck converter) instead switches fully on and off very fast and smooths the result. It is typically 85 to 95% efficient, so it stays cool, but its output has a small **ripple** and it needs more parts.
+> A **switching regulator** (a buck converter) switches fully on and off very fast and smooths the result. At 85 to 95% efficiency it stays cool. Cheap buck modules cost about the same as an LDO.
 >
-> Rule of thumb: a small drop or a tiny current suits an LDO. A big drop or a big current needs a switcher.
+> Rule of thumb: small drop or tiny current, an LDO is fine. Big drop or big current, use a buck.
 
-**Key takeaway:** A linear regulator burns the extra voltage as heat. A switcher runs cool but adds ripple. Choose based on the voltage drop and the current.
+**Key takeaway:** An LDO burns the extra voltage as heat; a buck converter runs cool. Choose by the voltage drop and the current.
 
-**Skills unlocked:** Choose between a linear regulator and a switcher; Predict how hot a linear regulator will get
+**Skills unlocked:** Choose between an LDO and a buck converter; Predict how hot a linear regulator will get
 
 **Q1.** An LDO turns 12 V into 5 V for a 500 mA load. How much heat does it make?
 
@@ -712,11 +913,11 @@ _Batteries, regulators and the little capacitors that keep chips happy._
 - If they enter 6 W: _That is the total power going in (12 V × 0.5 A). Only the dropped part becomes heat: (12 − 5) × 0.5._
 - If they enter 2.5 W: _That is what the load uses (5 V × 0.5 A). The regulator's heat is the dropped voltage times the current._
 
-**Q2.** Why does the switching regulator stay cool?
+**Q2.** Why does the buck converter stay cool?
 
 - ✅ Its switch is always fully on or fully off, so it never sits half-open burning power: _Just like the MOSFET: fully on means almost no voltage across it, fully off means no current. Either way, little heat._
 - ❌ It has a bigger heatsink: _It usually has a smaller one. It simply wastes much less power in the first place._
-- ❌ It makes the load draw less current: _The load draws the same 5 V and the same current either way. The switcher just wastes far less getting there._
+- ❌ It makes the load draw less current: _The load draws the same 5 V and the same current either way. The buck just wastes far less getting there._
 
   Hint: Remember the MOSFET lesson: when does a switch get hot?
 
@@ -726,370 +927,165 @@ _Batteries, regulators and the little capacitors that keep chips happy._
 - Hint: At 12 V in, the LDO would have to burn 3.5 W. Which regulator wastes less?
 - On success: _The buck converter wastes only about a quarter of a watt here, so it stays barely warm._
 
-### 5.3 Decoupling capacitors (6 min)
+## Module 7: From breadboard to a reliable device
 
-**Opening prompt (before any reading):** Watch the chip's supply voltage dip each time it gets busy. Then drag the little capacitor closer to its power pin.
+_Debugging, making it permanent, and staying safe._
 
-**Water view:** yes (Real / Both / Water toggle)
+### 7.1 Debugging a dead device (8 min)
 
-**Explanation**
-
-> Digital chips do not draw a steady current. On every clock tick, thousands of transistors switch at once and gulp a burst of current lasting a few billionths of a second.
->
-> The supply cannot respond that fast. It is far away, and the long trace to the chip behaves like a heavy column of water that resists sudden changes in flow (it has **inductance**). So during each burst the voltage at the chip's pin dips. Dip too far and the chip glitches or resets.
->
-> A **decoupling capacitor** is a tiny local tank right next to the pin. It covers each burst instantly, then refills from the supply. It only works when it is **close**: millimetres, not centimetres.
->
-> Standard practice: one 100 nF ceramic capacitor per power pin, as close as you can get it.
-
-**Key takeaway:** Put a 100 nF capacitor at every power pin, millimetres away.
-
-**Skills unlocked:** Place decoupling capacitors where they actually work
-
-**Q1.** Where should a chip's 100 nF decoupling capacitor go?
-
-- ✅ Right next to the power pin, with short connections to power and ground: _Close means very little trace between the tank and the pin, so it can respond instantly._
-- ❌ Next to the power supply, where the power comes in: _That is the far end of the long trace: each burst still has to travel the whole way._
-- ❌ Anywhere on the board, since it is all the same net: _It is the same net electrically, but every millimetre of trace adds inductance that slows the capacitor down._
-
-  Hint: What did the dip do as you dragged the capacitor along the trace?
-
-**Q2.** Without a decoupling capacitor, why does the chip's supply dip during a burst?
-
-- ✅ The long trace's inductance stops the current from rising fast enough: _Like a heavy column of water, the current in a long trace cannot speed up instantly, so the pin briefly runs short._
-- ❌ The supply voltage is set too low: _Between bursts the voltage is fine. The dips only come with sudden changes in current._
-- ❌ The chip draws too much current on average: _The average is small. It is the sudden bursts that the trace cannot keep up with._
-
-  Hint: The dips only appear at the moment the current suddenly changes.
-
-**Q3 (do it in 3D).** Place the decoupling capacitor so the dip is **smaller than 0.1 V** and the chip stops resetting.
-
-- Scene check: `capClose`
-- Hint: Fit the capacitor, then drag it (or use the slider) until it is just a few millimetres from the pin.
-- On success: _A few millimetres from the pin, the local tank catches each burst before the long trace even notices._
-
-## Module 6: From idea to circuit board
-
-_Schematic, footprints, layers and checks: designing a real board._
-
-### 6.1 Schematic → netlist (8 min)
-
-**Opening prompt (before any reading):** Connect pins in the schematic: tap one pin, then another. Watch each connection light up on the real board.
+**Opening prompt (before any reading):** This rewired Plant Buddy hides a short. Set the bench supply's current limit before you switch on, or see what happens.
 
 **Water view:** no
 
 **Explanation**
 
-> A **schematic** is the circuit's map: symbols for parts, lines for connections. It says nothing about where parts sit on the board, only what connects to what.
+> When a project is dead, don't guess: work from the power outward. Does the board get power? Is the power LED on? Are there 3.3 V between 3V3 and GND?
 >
-> Every group of pins joined together is called a **net**, and each net gets a name, like GND or +5V. The full list of nets, with every pin on each one, is the **netlist**.
+> Power a new or rewired build from a **bench supply with a current limit**, set just above what it should draw, such as 100 mA. If there is a short, the supply holds the current at the limit and the voltage collapses, instead of something burning.
 >
-> The netlist is the contract between your schematic and your board. In the layout, every pin in a net must be joined by copper, and nothing else may touch it. Design tools show connections still to be made as thin lines called a **ratsnest**.
+> Then hunt with the power off. On resistance mode, close to 0 Ω between 3V3 and GND means a short. Look for stray wire ends, bent legs and solder blobs between pins.
 >
-> The schematic is the single source of truth: if something needs to change, change it there first.
+> Only when the power is right, move on to the wiring, and then to the code.
 
-**Key takeaway:** The schematic is the single source of truth. The netlist is the contract the layout must honour.
+**Key takeaway:** Debug from the power outward, and switch new builds on with a current limit first.
 
-**Skills unlocked:** Draw a simple schematic and explain what a net is
+**Skills unlocked:** Bring up a new build safely with a current-limited supply; Track down a short with the meter
 
-**Q1.** What is a net?
+**Q1.** Plant Buddy is completely dead. What do you check first?
 
-- ✅ A group of pins that are all connected together: _A net can join two pins or two hundred. Everything on it sits at the same voltage._
-- ❌ A single wire between exactly two pins: _A net can join any number of pins. GND often joins dozens._
-- ❌ The copper on the board: _Copper is how the layout makes a net real. The net itself is the idea: these pins are connected._
+- ✅ Whether there are 3.3 V between 3V3 and GND: _Without power nothing else can work, so it is the first and quickest check._
+- ❌ The Wi-Fi password in the code: _Code comes last. A dead board is a power problem until proven otherwise._
+- ❌ Whether the soil sensor is calibrated: _Calibration cannot make a board dead. Check the power first._
 
-  Hint: Look at the netlist under the schematic. How many pins does GND have?
+  Hint: Work from the power outward.
 
-**Q2.** While laying out the board you notice the LED should go to a different pin. What do you change first?
+**Q2.** You switch on with a 100 mA limit. The supply jumps into current limit and the voltage drops to 0.1 V. What does that tell you?
 
-- ✅ The schematic, then update the layout from it: _Change the source of truth first, and the netlist and layout follow._
-- ❌ Just move the trace in the layout: _Then the schematic and the board disagree, and the next update or check will flag it or undo your change._
-- ❌ Nothing: the factory will notice: _The factory builds exactly what your files say. It does not check your circuit._
+- ✅ There is a short between the supply and GND: _Only a near-zero resistance pulls the full 100 mA at 0.1 V. The limit saved the board._
+- ❌ The board is working and needs more current: _A working board would sit at 3.3 V drawing tens of milliamps. At 0.1 V it is shorted._
+- ❌ There is an open somewhere: _An open draws no current at all. Here the current is at its limit, so it is a short._
 
-  Hint: Which document is the single source of truth?
+  Hint: A big current at almost no voltage: what kind of path is that?
 
-**Q3 (do it in 3D).** Wire the schematic so that **all 5 nets** are complete and nothing is joined that should not be.
-
-- Scene check: `allNets`
-- Hint: The goal nets are listed under the schematic. Check them off one by one: +5V, GATE, LED_A, DRAIN and GND.
-- On success: _Five nets, matching the netlist exactly. Press the button in the simulation: it switches the MOSFET, and the LED lights._
-
-### 6.2 Footprints (6 min)
-
-**Opening prompt (before any reading):** Pick a part from the tray, then a pad pattern on the board. Can you match all four?
-
-**Water view:** no
-
-**Explanation**
-
-> A **footprint** is the pattern of copper pads (and holes) a part is soldered onto. Every part in your schematic needs one, and it has to match the real part exactly: the number of pins, the spacing between them (the **pitch**) and the pad sizes. Get it wrong and the part will not fit, which you usually discover when the boards arrive.
->
-> Footprints come from the part's datasheet, which shows a recommended pad layout. Design tools have big libraries, but always compare with the datasheet.
->
-> Watch the size codes on small parts. **0805** is an imperial code: 0.08 × 0.05 inch, which is 2.0 × 1.25 mm, or **2012** in metric. Some suppliers use metric codes, and the same four digits can then mean a much smaller part.
-
-**Key takeaway:** The footprint must match the datasheet exactly: pins, pitch and pad size. Check whether a size code is imperial or metric.
-
-**Skills unlocked:** Match a part to the correct footprint
-
-**Q1.** An "0805" resistor uses the imperial size code. How big is it?
-
-- ✅ 2.0 × 1.25 mm (metric code 2012): _0.08 inch ≈ 2.0 mm and 0.05 inch ≈ 1.25 mm, so the metric code is 2012._
-- ❌ 0.8 × 0.5 mm, read straight from the code: _That reads the digits as millimetres. 0805 is in hundredths of an inch, which is about 2.5 times bigger._
-- ❌ 8 × 5 mm: _Far too big. 0805 means 0.08 × 0.05 inch, about 2.0 × 1.25 mm._
-
-  Hint: The digits are hundredths of an inch: 0.08 × 0.05 inch. One inch is 25.4 mm.
-
-**Q2.** Where should the exact pad sizes for a new footprint come from?
-
-- ✅ The part's datasheet (its recommended land pattern): _The manufacturer tells you exactly which pads its part needs._
-- ❌ Measuring the part with a ruler: _Too rough. Pads need the right size and extra margin for solder, which the datasheet specifies._
-- ❌ Any footprint with the right number of pins: _Pin count is not enough. Pitch, pad size and spacing must match too._
-
-  Hint: What is "the truth" for any part?
-
-**Q3 (do it in 3D).** Put **all four parts** on their correct footprints.
-
-- Scene check: `matchAll`
-- Hint: Compare the pin count first, then the spacing. Tap a part to read its size, then tap the pads that match.
-- On success: _Every part sits on pads made for it. That is what lets a machine place and solder them automatically._
-
-### 6.3 Layers, traces, vias and the ground plane (8 min)
-
-**Opening prompt (before any reading):** This is a real circuit board. Drag the slider to pull it apart.
-
-**Water view:** yes (Real / Both / Water toggle)
-
-**Explanation**
-
-> A circuit board is a sandwich. In the middle is a stiff fibreglass core. Copper sits on each side, etched into **traces**, which are flat wires. Green solder mask covers the copper so solder only sticks where it should, and white silkscreen prints the labels.
->
-> A **via** is a tiny plated hole that carries a connection from one copper layer to the other.
->
-> Traces have resistance, so thin ones carrying lots of current get hot. Signal traces can be thin (about 0.25 mm), while power traces need to be wider. A trace-width calculator gives the exact figure.
->
-> On a 2-layer board, make the bottom layer one unbroken sheet of copper connected to ground: a **ground plane**. Current always returns to its source, and it prefers the path right underneath its own trace. Cut the plane and it detours, making a loop that broadcasts noise.
-
-**Key takeaway:** Size power traces for their current, and keep one solid ground plane under your signals.
-
-**Skills unlocked:** Read the layers of a 2-layer board; Size a power trace for its current; Keep the ground plane solid
-
-**Q1.** What is a via?
-
-- ❌ A component that blocks current: _That would be an insulator. A via is a conductor, joining layers._
-- ✅ A plated hole that connects copper layers: _Its copper-plated barrel joins the top copper to the bottom copper._
-- ❌ A hole for a mounting screw: _Mounting holes are bigger and usually not connected to any net. Vias carry signals and power between layers._
-- ❌ A test point: _A test point is a pad you can probe. A via is a plated hole joining layers (though you can sometimes probe one)._
-
-  Hint: Tap the highlighted via and watch which layers it lights up.
-
-**Q2 (do it in 3D).** The LED strip trace carries **3 A**. Widen it until it stays under **+20 °C**.
-
-- Scene check: `traceCool`
-- Hint: Drag the trace-width slider and watch the colour and the temperature rise. Use the keyboard arrows for fine steps.
-- On success: _About 0.9 mm keeps a 3 A trace within +20 °C on 1 oz outer copper (IPC-2221). The starting 0.4 mm would have run at about +76 °C._
-
-**Q3.** To make room for a quick trace, someone cuts a slot in the ground plane right under a fast signal. What happens?
-
-- ❌ Nothing: ground is ground: _Ground is a path, not just a label. The return current has to physically flow back through it._
-- ✅ The return current detours around the slot, making a bigger loop and more noise: _The loop between the signal and its return gets much bigger, and a big loop acts like an antenna._
-- ❌ The signal gets faster: _If anything it gets worse: the detour adds inductance and noise._
-- ❌ The board shorts out: _Nothing is shorted. The problem is the detour the return current has to take._
-
-  Hint: Watch the return current on the bottom layer when you cut the slot.
-
-### 6.4 Design rule checks (7 min)
-
-**Opening prompt (before any reading):** This board has four hidden problems. Run the checks and fix each one.
-
-**Water view:** no
-
-**Explanation**
-
-> Before you order, two automatic checkers go through your design.
->
-> **ERC** (electrical rule check) reads the schematic and flags logic problems: an input with nothing driving it, two outputs fighting each other, a pin left unconnected that should not be.
->
-> **DRC** (design rule check) reads the layout and compares it with the factory's limits: copper too close to other copper, traces too thin, holes too small, connections not yet routed, parts not sitting on their pads.
->
-> Every error comes with a location. Fix it, or, if you are sure it is intended, mark it as reviewed with a note. The goal is a report with **zero unexplained errors**. It takes minutes, and saves a board re-spin that costs weeks.
-
-**Key takeaway:** ERC checks the schematic's logic. DRC checks the physical layout. Ship with zero unexplained errors.
-
-**Skills unlocked:** Run DRC and ERC, and fix what they flag
-
-**Q1.** What is the difference between DRC and ERC?
-
-- ✅ DRC checks the physical layout against the factory's rules. ERC checks the schematic's logic.: _Exactly: ERC asks "does this circuit make sense?" and DRC asks "can the factory build this?"_
-- ❌ They are two names for the same check: _They read different documents and catch different mistakes. You need both._
-- ❌ ERC checks the layout, DRC checks the schematic: _The other way round: Design Rule Check covers the layout; Electrical Rule Check covers the schematic._
-
-  Hint: One reads the schematic, the other reads the board layout.
-
-**Q2.** DRC flags something you have checked and know is harmless, such as a deliberate gap. What should you do?
-
-- ✅ Mark it as reviewed with a note, so the report shows zero unexplained errors: _Then the next person, or future you, can see it was a decision and not a mistake._
-- ❌ Ignore it: factories fix small things: _Factories build exactly what your files say. And an ignored error hides the next real one._
-- ❌ Delete the rule so it stops complaining: _That hides real errors of the same kind too._
-
-  Hint: The goal is zero *unexplained* errors.
-
-**Q3 (do it in 3D).** Fix all **four** problems, so that both DRC and ERC report zero errors.
-
-- Scene check: `cleanReport`
-- Hint: Run DRC (three layout problems) and ERC (one schematic problem). Tap each error to jump to it and fix it, then run both checks again.
-- On success: _Zero errors in both checks: this board is ready to export for manufacturing._
-
-## Module 7: Make it real
-
-_How boards are made and assembled, and how to switch one on safely._
-
-### 7.1 Fabrication files, BOM, and how boards are made (7 min)
-
-**Opening prompt (before any reading):** Step through the factory and watch which file drives each step. Then fix the parts list so it can be ordered.
-
-**Water view:** no
-
-**Explanation**
-
-> A board factory never opens your design tool. You send a zip of standard files: **Gerber files**, one per layer (each copper layer, solder mask, silkscreen and the board outline), plus a **drill file** listing every hole.
->
-> The factory starts with fibreglass covered in copper on both sides. It drills the holes and plates them with copper, which turns holes into vias. Then it prints your trace pattern and etches away all the copper that is not part of it. Solder mask, silkscreen and a thin protective finish on the pads come last.
->
-> For assembly you also send a **BOM** (bill of materials: every part, with its exact manufacturer part number) and a **pick-and-place file** saying where each part goes. A missing or vague part number is the most common reason orders get stuck.
-
-**Key takeaway:** Gerbers and a drill file make the bare board. A BOM and a placement file get it assembled. Every BOM line needs an exact part number.
-
-**Skills unlocked:** Prepare a complete order package (Gerbers, drill file, BOM)
-
-**Q1.** Which file tells the factory where to drill the holes?
-
-- ✅ The drill file: _Drill files (often in "Excellon" format) list every hole's position and size._
-- ❌ The top copper Gerber: _Gerbers describe the flat pattern on each layer, like copper and mask. Holes have their own file._
-- ❌ The BOM: _The BOM lists the parts to buy and fit. It says nothing about the bare board._
-
-  Hint: Step through the factory: which file is shown at the drilling step?
-
-**Q2.** Your assembled-board order is stuck at the factory. What is the most likely cause?
-
-- ✅ A BOM line without an exact manufacturer part number: _"100 nF capacitor" could be a thousand different parts. The factory has to stop and ask._
-- ❌ The silkscreen text is too small: _At worst it prints a bit blurry, or you get a warning. It rarely stops an order._
-- ❌ The board is green: _Green is the default solder-mask colour. Any colour is fine._
-
-  Hint: Look at the BOM below the scene.
-
-**Q3 (do it in 3D).** Fix the BOM so the factory can source every part.
-
-- Scene check: `fixBom`
-- Hint: One line has a vague description instead of a part number. Pick the exact part that matches its value **and** its footprint.
-- On success: _Every line now names one exact part, in the right package. This order can go through without questions._
-
-### 7.2 Assembly and reflow (6 min)
-
-**Opening prompt (before any reading):** Run the assembly line step by step. Then make the paste uneven and watch a part stand on its end.
-
-**Water view:** no
-
-**Explanation**
-
-> Most boards are assembled by machines, and the process is the same everywhere.
->
-> First a thin steel **stencil** with holes over each pad is laid on the board, and a blade wipes **solder paste** (tiny solder balls in sticky flux) through it. A **pick-and-place** machine then sets each part onto its paste, slightly imperfectly. Finally the board rides through a **reflow oven** that follows a temperature profile: warm up, soak, a short peak around 240 °C to melt the solder, then cool.
->
-> Molten solder has strong surface tension. It pulls each part onto the centre of its pads, so slightly crooked parts **self-align**. But if one pad gets much more paste than the other, the solder on that side can pull the part upright: a **tombstone**.
-
-**Key takeaway:** Stencil, paste, pick-and-place, reflow. Molten solder pulls parts straight, and uneven paste can stand them on end.
-
-**Skills unlocked:** Explain how parts are soldered by machine, and why the paste matters
-
-**Q1.** Why do slightly crooked parts end up straight after reflow?
-
-- ✅ Molten solder's surface tension pulls them onto the centre of their pads: _Liquid solder wants the smallest surface, so it drags the part until it sits evenly on both pads._
-- ❌ The oven's fans blow them straight: _The airflow is gentle, and if anything it would knock parts out of place. The solder does the aligning._
-- ❌ The pick-and-place machine comes back to fix them: _Once the board enters the oven, nobody touches it. The molten solder does the work._
-
-  Hint: Watch the parts at the moment the solder melts.
-
-**Q2.** What causes tombstoning?
-
-- ✅ Uneven solder paste or heating, so one end's solder pulls harder: _The side that melts first, or has more solder, wins the tug of war and lifts the other end._
-- ❌ Too much solder mask: _Solder mask sits between the pads, not on them. The cause is unbalanced solder._
-- ❌ Using an LED instead of a resistor: _Any small two-pad part can tombstone. It is about the solder, not the type of part._
-
-  Hint: Try the uneven paste setting.
-
-**Q3 (do it in 3D).** Run the full line with even paste, so every part solders flat with **no tombstones**.
-
-- Scene check: `noTombstone`
-- Hint: Choose even paste, then press "Run the whole line" (or step through it) and let the reflow finish.
-- On success: _Even paste on both pads means a fair tug of war: the part settles flat and centred._
-
-### 7.3 First power-on (bring-up) (7 min)
-
-**Opening prompt (before any reading):** This brand-new board hides a short. Set the bench supply's current limit before you switch on, or see what happens.
-
-**Water view:** no
-
-**Explanation**
-
-> A brand-new board is guilty until proven innocent. Switch it on carelessly and a single solder bridge can cook a part in a second. Professionals follow the same order every time:
->
-> 1. **Inspect**: look for bridges and missing or rotated parts.
->
-> 2. **Check for shorts**: with the power off, measure the resistance between the supply rail and ground. It should not be near 0 Ω.
->
-> 3. **Power up with a current limit**: set the supply's limit just above what the board should draw, say 50 mA. A short then makes the supply report the fault instead of burning anything.
->
-> 4. **Check the rails**: measure each supply voltage.
->
-> 5. **Check the signals**: test each function one by one.
-
-**Key takeaway:** Inspect, check for shorts, power up with a current limit, check the rails, then the signals. The current limit turns disasters into clues.
-
-**Skills unlocked:** Bring up a new board safely with a current limit
-
-**Q1.** What is the very first thing to do with a freshly assembled board?
-
-- ✅ Inspect it closely for solder bridges and missing or rotated parts: _Many faults are visible, and looking costs nothing and risks nothing._
-- ❌ Plug it into full power to see if it works: _If there is a short, full power can burn a part or a trace before you can react._
-- ❌ Measure the rail voltages: _That needs power. Look first, and check for shorts second._
-
-  Hint: Your eyes are the cheapest test equipment.
-
-**Q2.** You switch on with a 50 mA limit. The supply jumps into current limit and the voltage drops to 0.1 V. What does that tell you?
-
-- ✅ There is a short: the board is drawing every milliamp it is allowed: _The supply is protecting the board and telling you there is a low-resistance path. Time to find it with the meter._
-- ❌ The board is working normally: _A working board would sit at the set voltage, drawing its normal current._
-- ❌ The supply is broken: _It is doing exactly its job: limiting the current and telling you about it._
-
-  Hint: What kind of path takes all the current while the voltage collapses?
-
-**Q3 (do it in 3D).** Bring the board up safely: find and remove the short, then power it **with a current limit** until the rail reads 5 V.
+**Q3 (do it in 3D).** Bring Plant Buddy up safely: find and remove the short, then power it **with a current limit** until the rail reads 3.3 V.
 
 - Scene check: `bringUp`
-- Hint: Inspect, then use the meter on ohms between the +5V and GND test points. Remove the bridge, set the limit to 100 mA or less, and switch on.
-- On success: _The rail sits at 5 V and the board draws only its normal few milliamps. That is a successful bring-up._
+- Hint: Power off, meter on Ω between 3V3 and GND, tap the culprit to remove it, then switch on with a limit.
+- On success: _Current limit first, short found and removed with the power off, then a clean 3.3 V: the safe way to bring up any new build._
+
+### 7.2 Making it permanent (6 min)
+
+**Opening prompt (before any reading):** Compare a breadboard, a perfboard and a custom PCB build of Plant Buddy. Then set it up to survive a year in the garden.
+
+**Water view:** no
+
+**Explanation**
+
+> Breadboards are perfect for experimenting, but jumper wires wiggle loose, especially in a garden where things get bumped and damp.
+>
+> For a device that has to keep working, solder it. **Perfboard** is a board full of holes you solder parts and wires onto. Or order a custom **PCB**: you draw the connections in free software such as KiCad, and a factory makes the board for a few dollars. It pays off once you build more than one.
+>
+> Replace jumpers with **connectors** that lock, such as JST plugs or screw terminals, so sensors can be swapped without loose wires. Outdoors, use a sealed enclosure (IP65 or better) with a cable gland, and keep the battery out of direct sun.
+
+**Key takeaway:** Breadboard to experiment; solder, locking connectors and a sealed box for a device that lasts.
+
+**Skills unlocked:** Choose how to turn a prototype into a lasting device
+
+**Q1.** Plant Buddy works on the breadboard indoors, but in the garden it fails now and then. What is the most likely culprit?
+
+- ✅ A jumper wire working loose: an open that comes and goes: _Intermittent faults are almost always loose connections. Solder and locking connectors fix them._
+- ❌ The ESP32 is too slow: _Speed does not change with location. Things that come and go point to loose connections._
+- ❌ The Wi-Fi password expired: _Passwords do not cause on-and-off failures. Loose wiring does._
+
+  Hint: Which fault comes and goes when things get bumped?
+
+**Q2.** When is it worth ordering a custom PCB instead of soldering perfboard?
+
+- ✅ When you build several copies, or need it small and robust: _Design once, and every copy is identical, compact and quick to assemble._
+- ❌ Always, for any first prototype: _For a first prototype, a breadboard or perfboard is faster. A PCB pays off for repeats._
+- ❌ Only for mains-powered devices: _PCBs suit any device. The reason to order one is several copies or a small, robust build._
+
+  Hint: Drawing a PCB takes time once; every copy after that is cheap.
+
+**Q3 (do it in 3D).** Set Plant Buddy up to survive **a year outdoors**.
+
+- Scene check: `outdoorReady`
+- Hint: A soldered build, connectors that lock, and an enclosure that keeps the rain out.
+- On success: _Soldered joints, locking connectors and a sealed box: the three things that keep an outdoor device working._
+
+### 7.3 Safety: mains, Li-ion and outdoors (5 min)
+
+**Opening prompt (before any reading):** Tap each item on the bench to see how risky it is. Then sort them all.
+
+**Water view:** no
+
+**Explanation**
+
+> Everything in this course runs on 5 V or less, and that is deliberate. **Mains electricity** can kill. Don't wire it yourself: to switch a lamp or a heater, use a certified smart plug.
+>
+> **Li-ion cells** such as the 18650 store a lot of energy. A short circuit or a crushed cell can catch fire. Use protected cells or a charger board with protection, never solder directly to a cell, and watch the first charges.
+>
+> Outdoors, water and sun are the enemies: seal the enclosure, and keep the battery shaded and above freezing while it charges.
+
+**Key takeaway:** Stay at 5 V and below. Mains: buy certified. Li-ion: protected cells and chargers, never shorted.
+
+**Skills unlocked:** Know which jobs need certified products, never DIY
+
+**Q1.** You want Plant Buddy to switch on a grow lamp that plugs into the wall. What do you do?
+
+- ✅ Use a certified smart plug and have the ESP32 send it a message: _The dangerous part is sealed inside a tested product. Your project stays at 5 V._
+- ❌ Cut the lamp cable and wire in a relay module: _That puts mains on an open hobby board, a shock and fire risk. Use a certified smart plug._
+- ❌ Drive the lamp straight from a GPIO pin: _A pin gives 3.3 V and a few milliamps, and must never meet mains. Use a smart plug._
+
+  Hint: Who should handle the mains side?
+
+**Q2.** Which Li-ion habit is safe?
+
+- ✅ Charge through a charger module with protection: _Protection stops overcharge, over-discharge and short circuits, the causes of Li-ion fires._
+- ❌ Solder the wires straight onto the cell: _The soldering heat can damage the cell inside. Use a holder or a cell with tabs._
+- ❌ Leave a crushed cell in the device if it still works: _A damaged cell can short internally and catch fire later. Recycle it._
+
+  Hint: Protection is the keyword.
+
+**Q3 (do it in 3D).** Sort **every item** on the bench into the right group.
+
+- Scene check: `sorted`
+- Hint: Tap each one first: its card says how risky it is.
+- On success: _Low-voltage modules are fine to experiment with, Li-ion needs care and protection, and mains is for certified products only._
+
+## Capstone: build Plant Buddy (15 min)
+
+1. **Power rails:** 3V3 and GND to the front rails (logic, sensors), VIN (5 V) and GND to the back rails (pump).
+2. **Status LED:** D16 → 220 Ω → red LED → GND (5.9 mA). Wrong picks are explained: GPIO 34 is input-only, no resistor burns the LED, 47 Ω is too much.
+3. **Sensors:** soil AOUT on D32 (ADC1; D4 is ADC2 and fails with Wi-Fi on), soil VCC on 3.3 V, BME280 SDA on D21 and SCL on D22.
+4. **Pump driver:** logic-level MOSFET, 10 kΩ gate pull-down and a flyback diode; never the pump straight on a pin.
+5. **Power budget:** 2500 mAh, awake 100 mA for 5 s per wake-up, more than 90 days needed. A DevKit waking every 10 min lasts 18 days; a low-power board lasts 124 days.
+6. **Fix three faults** (pick the fix for each symptom):
+   - _Soil readings are fine on USB, but turn to nonsense once Wi-Fi connects._ Fix: Move the soil sensor's AOUT from D4 to D32. D4 is an ADC2 pin, and Wi-Fi takes ADC2 over. D32 is on ADC1, which keeps working.
+   - _The status LED flashed very brightly once, and has never lit since._ Fix: Fit a new LED with a 220 Ω resistor in series. With no resistor nothing limited the current, so the LED burned out. 220 Ω keeps it near 6 mA.
+   - _The ESP32 resets every time the pump switches off._ Fix: Fit a flyback diode across the pump, stripe towards +5 V. At switch-off the pump's coil kicks back with a voltage spike. The diode gives that current a safe loop.
+7. **Run it:** a time-lapse until the soil drops below 30% and the pump waters it back above 80%.
+8. **Certificate** with the learner's name and the skills they unlocked.
 
 ## Later, if you're curious (glossary of what was cut)
 
-- **Semiconductor doping**: Adding tiny amounts of other elements to silicon so it conducts in controlled ways. It is how diodes and transistors are made.
-- **Inductor**: A coil of wire that resists changes in current, the way a capacitor resists changes in voltage. Think of it as a heavy water wheel that is slow to start and slow to stop.
-- **Transformer**: Two coils sharing a magnetic core. They swap voltage for current (step up or step down) in AC circuits such as wall chargers.
-- **Crystal / oscillator**: A tiny vibrating quartz part that gives a chip a very steady clock frequency.
-- **Op-amp**: An amplifier chip that compares two voltages. With a few resistors it can amplify, filter or compare signals.
-- **Kirchhoff's laws**: The formal names for "currents into a junction equal currents out" and "voltages around a loop add up to zero". You already used both in the series and parallel lesson.
-- **Impedance**: Resistance generalised to signals that change: capacitors and inductors "resist" differently at different frequencies.
-- **Resonance**: The frequency at which an inductor and a capacitor swap energy back and forth most easily, like a swing pushed at just the right moment.
-- **Filters**: Combinations of resistors, capacitors and inductors that let some frequencies through and block others, for example to clean up audio or sensor signals.
-- **Flip-flops and registers**: The smallest memory cells in digital chips. Each remembers a single 1 or 0 until the next clock tick.
-- **Clocks**: The steady beat that tells digital circuits when to take their next step.
-- **Setup and hold time**: How long a digital signal must stay steady before and after a clock tick to be read correctly.
-- **ADC**: Analog-to-digital converter: measures a voltage and turns it into a number, for example to read a temperature sensor.
-- **DAC**: Digital-to-analog converter: turns a number into a voltage, for example to make sound.
-- **Signal integrity**: Keeping fast signals clean as they travel along traces, without ringing, reflections or interference.
-- **Controlled impedance**: Designing trace width and layer spacing precisely so very fast signals do not reflect along the trace.
-- **Differential pairs**: Two traces carrying opposite copies of a signal (USB, Ethernet). The receiver looks at the difference, which cancels out noise.
-- **EMC**: Electromagnetic compatibility: making sure a product neither radiates too much noise nor gets upset by other devices' noise.
-- **RF**: Radio frequency design: antennas, Wi-Fi, Bluetooth. Traces start behaving like antennas, so layout rules get much stricter.
-- **Thermal design**: Getting heat out of hot parts with copper area, vias, heatsinks and airflow.
-- **Power integrity**: Keeping supply voltages steady across a whole board, even when chips suddenly demand bursts of current. Decoupling caps are the first step.
+- **Schematic capture**: Drawing your circuit as symbols in software such as KiCad. It is the first step towards ordering a custom PCB.
+- **PCB layout**: Placing parts and drawing copper traces on a board design. Free tools and cheap factories make it easy once you outgrow perfboard.
+- **Trace width**: How wide a copper track must be for a given current. Matters for pumps, motors and LED strips on a custom PCB.
+- **Gerber files**: The files a PCB factory needs to make your board, one per layer, plus a drill file.
+- **Level shifter**: A small board that translates signals between 3.3 V and 5 V in both directions, for buses like I2C.
+- **Pull-up values for I2C**: Long I2C wires or many devices may need stronger pull-ups (for example 4.7 kΩ instead of 10 kΩ).
+- **Op-amp**: An amplifier chip. With a few resistors it can boost a tiny sensor signal so the ADC can read it.
+- **ADC calibration and filtering**: Correcting the ESP32's ADC curve and smoothing noisy readings in software for more accurate sensors.
+- **Hall and current sensors**: Modules that measure a current without breaking the circuit, handy for logging how much power a device uses.
+- **Solar charging**: A small solar panel and a charger module can top up Plant Buddy's cell. Size both from your power budget.
+- **Buck-boost converter**: A switching regulator that gives a steady output whether the battery is above or below it.
+- **Inductor**: A coil that resists changes in current. It is the heart of buck converters and the reason motors kick back.
+- **ESD**: Electrostatic discharge: a static zap from your finger can damage a pin. Touch something grounded before handling boards.
+- **Antennas and RF layout**: Keep metal and wires away from the ESP32's antenna end, or the Wi-Fi range drops. RF design is a deep field of its own.
+- **LoRa**: A long-range, low-power radio for sensors far from Wi-Fi, at the cost of sending only small amounts of data.
+- **MQTT**: A light messaging protocol many IoT devices use to send readings to a server or a dashboard.
+- **Watchdog timer**: A timer that resets the chip if your code gets stuck. Its reset message is different from a brownout.
+- **EMC**: Electromagnetic compatibility: a product must not disturb other devices with radio noise, and must not be upset by theirs.
+- **Certification (CE, FCC, UL)**: Tests a product must pass before it can be sold. Using a pre-certified ESP32 module makes this far easier.
+- **Mains design**: Designing circuits that touch 230 V or 120 V needs training, creepage rules and certification. Buy certified products instead.

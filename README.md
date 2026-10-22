@@ -1,10 +1,10 @@
-# Electronics in 20%
+# Electronics in 20% (for IoT beginners)
 
-An interactive 3D course that teaches the small part of electronics that explains most of it. It takes an adult beginner from "what is voltage?" to "I can design and order my first circuit board" in about **2 h 56 min**: 24 lessons of 5–8 minutes in 7 modules, plus a 15-minute capstone.
+An interactive 3D course that teaches **the electronics an IoT beginner needs, and nothing more**. It is not training to become an electronics engineer: it fills the electricity gap that people starting with IoT have, always in the line of IoT. In about **2 h 57 min** (24 lessons of 5–8 minutes in 7 modules, plus a 15-minute capstone) learners build **Plant Buddy**, a battery-powered ESP32 plant monitor with a soil-moisture sensor, a BME280, a status LED and a small pump.
 
-Every lesson starts with a 3D scene to play with. Then comes a short explanation (150 words at most), one key takeaway and three quick questions, one of which is done in the 3D scene. Mistakes are safe: burn a resistor, blow a fuse or cook a MOSFET, read what happened, then press Undo.
+Every lesson starts with a 3D scene on a real-looking bench (ESP32 DevKit, breadboard, Dupont jumpers, resistors, sensors). Then comes a short explanation (150 words at most), one key takeaway and three quick questions, one of which is done in the 3D scene. Mistakes are safe: burn an LED, short the 3.3 V rail, overload a pin or cook a MOSFET, read what happened, then press Undo.
 
-Built with Vite, TypeScript and Three.js. There is no backend; progress is saved in the browser's `localStorage`.
+Built with Vite, TypeScript and Three.js. There is no backend; progress is saved in the browser's `localStorage`. Live at https://nkiliyumwami.github.io/electronics-in-20/ (deployed by GitHub Actions on every push to `main`).
 
 ## Run it
 
@@ -25,7 +25,7 @@ Other commands:
 |---|---|
 | `npm run build` | Type-check and build to `dist/` (static files, work offline). |
 | `npm run preview` | Serve the build on the LAN. |
-| `npm run verify` | Content checks: word limits, prompt length, question structure, time budget, every numeric answer recomputed, every wrong-answer explanation compared with the mistake it describes, every number in a hint or feedback text audited, and DRC/ERC on the capstone board. |
+| `npm run verify` | Content checks: word limits, prompt length, question structure, time budget, every numeric answer recomputed, every wrong-answer explanation compared with the mistake it describes, and every number in a hint or feedback text audited. |
 | `npm run test:solver` | Circuit solver tests. |
 | `npm run e2e` | Builds, then performs every "do it in 3D" task and failure state through the real UI in headless Chrome. `QUERY=nowebgl` runs the same suite on the 2D fallback. |
 | `npm run smoke -- /lesson/1.2` | Screenshot plus console-error check for any routes. `WIDTH=360` tests phone width, `DARK=1` dark mode. |
@@ -40,19 +40,12 @@ Other commands:
 
 ## Design notes
 
-- **One mental model.** Voltage = pressure, current = flow, resistance = narrowness, capacitor = tank, diode = one-way valve, transistor = a tap turned by a small hand. Fifteen lessons have a **Real / Both / Water** toggle. Particle density is constant: speed shows current, and gauges show voltage as pressure.
-- **Real numbers.** A small modified-nodal-analysis solver drives every scene (diodes, MOSFETs, capacitors, inductors and current-limited supplies included). Trace heating uses IPC-2221 (outer layer, 1 oz copper): at 3 A, +20 °C needs 0.9 mm, the middle of the 0.2–1.6 mm slider. The capstone board is checked by a real geometric DRC.
-- **Accessibility.** Every 3D drag or tap has a panel equivalent. All controls are labelled native elements. Each scene lists its parts as buttons that open the same tooltip. Values are always shown as text, never as colour alone. The app supports reduced motion and light/dark themes.
-- **No WebGL?** The stage shows a diagram of the scene's parts, and every control, readout and task still works. The e2e suite passes in this mode.
-
-### Deviations from the brief, and why
-
-- **Water view:** included where the analogy holds (15 lessons). It is left out of 3.5 (chip internals), 4.1 and 4.3 (logic levels and buses), 6.1, 6.2 and 6.4 (schematic, footprints, checks), Module 7 (manufacturing) and the capstone, because a forced analogy would confuse more than help.
-- **Lesson 1.2** uses V = I × R as its live formula, and shows power as the heat meter (as agreed).
-- **Q1 of 1.2:** the "0.2 mA" option now has its own explanation (1 ÷ 5 with R in kΩ), separate from "200 mA" (1000 ÷ 5).
-- **Answers that aren't standard values** (250 Ω, 200 Ω) are accepted exactly, and the feedback names the nearest standard value (270 Ω, 220 Ω).
-- **No GSAP:** a small built-in tween in the exploded-view controller covers the animations, which saves a dependency.
-- **Footprint matching (6.2)** uses tap-part-then-tap-pads instead of free dragging, which works better on phones and has a keyboard path. Bulbs in 2.3 and the multimeter probes can be dragged.
+- **IoT first.** Every lesson answers "why does Plant Buddy need this?": the LED resistor on a GPIO pin, a divider to read the battery on an ADC1 pin, a MOSFET for the pump, I2C for the BME280, deep sleep for battery life. Engineer-level topics (PCB layout, trace maths, DRC, manufacturing) were cut; they are listed in the in-app glossary as "later, if you're curious".
+- **Beginner-first 3D.** Clarity beats realism: big readable pin labels, name tags on the pins in use, glow and arrows on what to touch, a guided part tour. The ESP32 DevKit plugs into rows b and i like the real 30-pin board, leaving one free hole per pin.
+- **One mental model.** Voltage = pressure, current = flow, resistance = narrowness, capacitor = tank, diode = one-way valve, MOSFET = a tap turned by a small hand. Nine lessons have a **Real / Both / Water** toggle; ESP32 scenes open in the Real view. Particle density is constant: speed shows current.
+- **Real numbers.** A small modified-nodal-analysis solver drives the circuits (diodes, MOSFETs, current-limited supplies). ESP32 facts used throughout: 3.3 V pins, 3.6 V absolute maximum, about 40 mA per pin (design for 20 mA), HIGH above 0.75 × 3.3 V, ADC 0–4095 most accurate up to about 2.5 V, ADC2 unusable with Wi-Fi, no internal pull-ups on GPIO 34–39, AMS1117 dropout about 1.1 V, Wi-Fi bursts about 250 mA.
+- **Accessibility.** Every 3D drag or tap has a panel equivalent. All controls are labelled native elements. Each scene lists its parts as buttons that spotlight the part and open its tooltip. Values are always shown as text, never as colour alone. The app supports reduced motion and light/dark themes.
+- **No WebGL?** The stage shows a diagram of the scene's parts, and every control, readout and task still works.
 
 ### Known limits
 

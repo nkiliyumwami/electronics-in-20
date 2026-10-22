@@ -47,7 +47,6 @@ CHECKS['1.1/q3'] = { allowed: [0, 1] };
       '0.01': PIN / R, // used the full 3.3 V
       [String(2 / 330)]: RED / R, // used the LED's voltage
       '0.254': R / VR / 1000, // R ÷ V, typed in mA
-      '254': R / VR, // R ÷ V, typed in A
     },
     allowed: [PIN, RED, R, r1(VR), r1(mA(VR / R))],
     extra: [{ name: '"≈ 3.9 mA"', check: () => eq(r1(mA(VR / R)), 3.9, 'I') }],

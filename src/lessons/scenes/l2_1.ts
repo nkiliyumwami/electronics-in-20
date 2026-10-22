@@ -94,6 +94,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
     }
     explorer.set(text);
     explorer.show(true);
+    roJ.set(text.replace('Joined: ', ''));
     explorer.obj.position.copy(holes[0]).setY(1.6);
   };
   const cols = b.bb.cols;
@@ -139,6 +140,8 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   );
   void colSel;
   const roL = panel.readout('LED');
+  const roJ = panel.readout('Joined underneath');
+  roJ.set('tap a hole or pick a strip');
   const note = panel.note('');
 
   function setPos(p: LedPos) {

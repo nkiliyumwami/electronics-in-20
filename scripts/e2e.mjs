@@ -151,8 +151,8 @@ const SCENARIOS = {
     fb = await checkTask(page, 3);
     expect(fb.startsWith('Done') && /lit/.test(led), `legs in 23/24 → ${led} → done`);
     await select(page, 'Show what is joined to', '24');
-    const lbl = await page.locator('.lbl', { hasText: 'Joined: column 24' }).first().waitFor({ state: 'visible', timeout: 8000 }).then(() => true, () => false);
-    expect(lbl, 'strip explorer labels column 24');
+    const joined = await page.locator('.readout:has-text("Joined underneath") .v').innerText();
+    expect(/column 24, rows f–j/.test(joined), `strip explorer: ${joined}`);
   },
   async '2.2'(page) {
     let fb = await checkTask(page, 3);
@@ -520,49 +520,57 @@ const SCENARIOS = {
     expect(fb.startsWith('Done') && s === '7 of 7', `all sorted: ${s} → done`);
   },
   async capstone(page) {
-    const btn = (name) => page.getByRole('button', { name, exact: true }).first().click();
-    for (let i = 0; i < 7; i++) await btn('Show me one net');
-    await btn('Check my schematic');
-    await btn('Next: Footprints →');
-    const fps = { U1: 'SOIC-8', Q1: 'SOT-23', C1: '0805', R1: '0805', R2: '0805', D1: '0805', SW1: 'SMD 6x6', J1: 'JST-PH 2.0 mm', J2: 'JST-PH 2.0 mm' };
-    for (const [r, f] of Object.entries(fps)) await page.selectOption(`select[aria-label="Footprint for ${r}"]`, f);
-    await btn('Check footprints');
-    let note = await page.locator('.panel .note').first().innerText();
-    expect(/J2/.test(note), `J2 on a 2 A connector is rejected (${note.slice(0, 60)})`);
-    await page.selectOption('select[aria-label="Footprint for J2"]', 'JST-XH 2.5 mm');
-    await btn('Check footprints');
-    await btn('Next: Placement →');
-    await btn('Next to the battery connector J1');
-    await btn('Place all parts');
-    note = await page.locator('.panel .note').first().innerText();
-    expect(/VCC/.test(note), 'C1 far from U1 is rejected');
-    await btn("Right at U1's VCC pin");
-    await btn('Place all parts');
-    await btn('Next: Routing →');
-    await page.selectOption('select[aria-label="Power trace width"]', '0.5');
-    await btn('Route the board');
-    await btn('Next: Checks →');
-    await btn('Run DRC + ERC + current check');
-    const out = await page.locator('.panel [aria-live]').first().innerText();
-    expect(/\+52 °C/.test(out), `0.5 mm power trace fails the current check (${out.slice(0, 90)})`);
-    await btn('← Back to routing');
-    await page.selectOption('select[aria-label="Power trace width"]', '0.9');
-    await btn('Route the board');
-    await btn('Next: Checks →');
-    await btn('Run DRC + ERC + current check');
-    const ok = await page.locator('.panel [aria-live]').first().innerText();
-    expect(/0 errors/.test(ok), `0.9 mm: ${ok}`);
-    await btn('Next: 3D view →');
-    await setRange(page, 'Explode the board', 1);
-    await btn('Looks good →');
-    await btn('Next: Power-up →');
-    await setRange(page, 'Current limit', logPos(0.1, 0.01, 4));
-    await btn('Output ON');
-    await btn('Connect the LED strip');
-    await setRange(page, 'Current limit', 1000);
-    await btn('Press SW1');
-    const stt = await waitReadout(page, 'Status', /strip on/, 5000);
-    expect(!!stt, `safe first power-up, then strip at full current: ${stt}`);
+    const btn = (name) => page.locator('.panel').getByRole('button', { name, exact: true }).first().click();
+    const note = () => page.locator('.panel .note').first().innerText();
+    // 1. Power rails
+    await select(page, 'Front red rail (logic) ← ESP32 pin', 'VIN');
+    expect(/damage/.test(await note()), '5 V on the logic rail → warned');
+    await select(page, 'Front red rail (logic) ← ESP32 pin', '3V3');
+    await select(page, 'Front blue rail ← ESP32 pin', 'GND');
+    await select(page, 'Back red rail (pump) ← ESP32 pin', 'VIN');
+    await select(page, 'Back blue rail ← ESP32 pin', 'GND');
+    await btn('Next: Status LED →');
+    // 2. Status LED
+    await select(page, 'LED signal pin', 'D16');
+    await select(page, 'Resistor', '0');
+    expect(/burn/.test(await note()), 'no resistor → burns out');
+    await select(page, 'Resistor', '220');
+    await btn('Next: Sensors →');
+    // 3. Sensors
+    await select(page, 'Soil sensor AOUT → ESP32 pin', 'D4');
+    expect(/ADC2/.test(await note()), 'soil sensor on D4 → ADC2 warning');
+    await select(page, 'Soil sensor AOUT → ESP32 pin', 'D32');
+    await select(page, 'Soil sensor VCC → rail', '3V3');
+    await select(page, 'BME280 SDA → ESP32 pin', 'D21');
+    await select(page, 'BME280 SCL → ESP32 pin', 'D22');
+    await btn('Next: Pump driver →');
+    // 4. Pump driver
+    await btn('Logic-level MOSFET (IRLZ44N)');
+    expect(/flyback/.test(await note()), 'MOSFET without a diode → flyback warning');
+    await btn('Flyback diode across the pump');
+    await btn('10 kΩ gate pull-down');
+    await btn('Next: Power budget →');
+    // 5. Power budget
+    await select(page, 'Wake up every', '10');
+    let life = await page.locator('.readout:has-text("Battery life") .v').innerText();
+    expect(/^1[89] days/.test(life), `DevKit, every 10 min → ${life}`);
+    await btn('Low-power board (10 µA asleep)');
+    life = await page.locator('.readout:has-text("Battery life") .v').innerText();
+    expect(/124 days/.test(life), `low-power board → ${life}`);
+    await btn('Next: Fix 3 faults →');
+    // 6. Faults
+    const sels = page.locator('.panel select');
+    const n = await sels.count();
+    await sels.nth(0).selectOption('1');
+    expect(/Calibration cannot/.test(await page.locator('.panel .note').first().innerText()), 'wrong fix → explained');
+    for (let i = 0; i < n; i++) await sels.nth(i).selectOption('0');
+    const fixed = await page.locator('.readout:has-text("Faults fixed") .v').innerText();
+    expect(fixed === '3 of 3', `faults fixed: ${fixed}`);
+    await btn('Next: Run it →');
+    // 7. Run
+    await btn('Switch on (time-lapse)');
+    const w = await waitReadout(page, 'Waterings', /^[1-9]/, 60000);
+    expect(!!w, `the soil dried, the pump watered it (${w})`);
     await btn('Next: Certificate →');
     await page.fill('input[aria-label="Your name"]', 'Test Learner');
     const href = await page.locator('a[download]').getAttribute('href');
@@ -574,7 +582,7 @@ const SCENARIOS = {
     // Fresh lesson: Next is locked until all three questions are attempted.
     const next = page.locator('nav .btn.primary');
     expect((await next.getAttribute('aria-disabled')) === 'true', 'Next starts locked');
-    await page.locator('.q').nth(0).getByRole('button', { name: /second point/ }).click();
+    await page.locator('.q').nth(0).getByRole('button', { name: /GND, the 0 V reference/ }).click();
     await page.locator('.q').nth(1).getByRole('button', { name: 'Current', exact: true }).click();
     const fb = await page.locator('.q').nth(1).locator('.fb').innerText();
     expect(/Hint/.test(fb), 'wrong answer shows a hint, no penalty');

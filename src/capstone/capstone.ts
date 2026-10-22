@@ -3,184 +3,163 @@ import { h, rich, toast } from '../core/dom';
 import { Panel } from '../core/panel';
 import { load, setCapstone, setName } from '../core/store';
 import { LESSONS } from '../content/index';
-import { BOM, STRIP_AMPS, nightlightDesign, nightlightErcPins } from '../content/nightlight';
-import { runDrc } from '../sim/drc';
-import { runErc } from '../sim/erc';
-import { traceRise } from '../sim/physics';
-import { SchematicEditor, type SchPart } from '../tools/schematic';
-import { Exploder } from '../tools/explode';
+import { CAPSTONE, budgetDays } from '../content/capstone';
 
+// Capstone: build Plant Buddy step by step on one breadboard, check the power
+// budget, diagnose a friend's faulty build, then watch it water the plant.
 const STEPS = [
-  { key: 'schematic', title: 'Schematic' },
-  { key: 'footprints', title: 'Footprints' },
-  { key: 'place', title: 'Placement' },
-  { key: 'route', title: 'Routing' },
-  { key: 'drc', title: 'Checks' },
-  { key: 'view', title: '3D view' },
-  { key: 'power', title: 'Power-up' },
+  { key: 'power', title: 'Power rails' },
+  { key: 'led', title: 'Status LED' },
+  { key: 'sensors', title: 'Sensors' },
+  { key: 'pump', title: 'Pump driver' },
+  { key: 'budget', title: 'Power budget' },
+  { key: 'faults', title: 'Fix 3 faults' },
+  { key: 'run', title: 'Run it' },
   { key: 'cert', title: 'Certificate' },
 ] as const;
 type StepKey = (typeof STEPS)[number]['key'];
 
-const SCH: SchPart[] = [
-  { ref: 'J1', sym: 'connector', x: 60, y: 140, value: 'battery 5 V', pins: [{ id: 'J1.1', x: 74, y: 120, label: '+' }, { id: 'J1.2', x: 74, y: 160, label: '−' }] },
-  {
-    ref: 'U1', sym: 'chip', x: 300, y: 200, value: 'ATtiny85',
-    pins: [
-      { id: 'U1.2', x: 260, y: 175, label: 'PB3' },
-      { id: 'U1.3', x: 260, y: 200, label: 'PB4' },
-      { id: 'U1.4', x: 260, y: 225, label: 'GND' },
-      { id: 'U1.8', x: 340, y: 165, label: 'VCC' },
-      { id: 'U1.5', x: 340, y: 235, label: 'PB0' },
-    ],
-  },
-  { ref: 'C1', sym: 'capacitor', x: 420, y: 120, vertical: true, value: '100 nF', pins: [{ id: 'C1.1', x: 420, y: 80 }, { id: 'C1.2', x: 420, y: 160 }] },
-  { ref: 'R1', sym: 'resistor', x: 170, y: 250, vertical: true, value: '10 kΩ', pins: [{ id: 'R1.1', x: 170, y: 210 }, { id: 'R1.2', x: 170, y: 290 }] },
-  { ref: 'SW1', sym: 'button', x: 110, y: 350, value: 'button', pins: [{ id: 'SW1.1', x: 70, y: 350 }, { id: 'SW1.2', x: 150, y: 350 }] },
-  { ref: 'R2', sym: 'resistor', x: 440, y: 300, value: '220 Ω', pins: [{ id: 'R2.1', x: 400, y: 300 }, { id: 'R2.2', x: 480, y: 300 }] },
-  { ref: 'D1', sym: 'led', x: 580, y: 300, value: 'LED', pins: [{ id: 'D1.A', x: 540, y: 300, label: 'A' }, { id: 'D1.K', x: 620, y: 300, label: 'K' }] },
-  { ref: 'Q1', sym: 'mosfet', x: 560, y: 180, value: 'MOSFET', pins: [{ id: 'Q1.G', x: 525, y: 190, label: 'G' }, { id: 'Q1.D', x: 570, y: 140, label: 'D' }, { id: 'Q1.S', x: 570, y: 220, label: 'S' }] },
-  { ref: 'J2', sym: 'connector', x: 650, y: 80, value: 'LED strip', pins: [{ id: 'J2.1', x: 636, y: 60, label: '+' }, { id: 'J2.2', x: 636, y: 100, label: '−' }] },
-];
-const GOAL: Record<string, string[]> = {
-  '+5V': ['J1.1', 'U1.8', 'C1.1', 'R1.1', 'J2.1'],
-  GND: ['J1.2', 'U1.4', 'C1.2', 'SW1.2', 'Q1.S', 'D1.K'],
-  BTN: ['U1.2', 'R1.2', 'SW1.1'],
-  GATE: ['U1.5', 'Q1.G'],
-  IND: ['U1.3', 'R2.1'],
-  LED_A: ['R2.2', 'D1.A'],
-  DRAIN: ['J2.2', 'Q1.D'],
-};
-const FP_CHOICES: Record<string, string[]> = {
-  U1: ['DIP-8', 'SOIC-8', 'QFN-20'],
-  Q1: ['SOT-23', 'SOT-223', 'TO-220'],
-  C1: ['0603', '0805', '1206'],
-  R1: ['0603', '0805', 'Axial (through-hole)'],
-  R2: ['0603', '0805', 'Axial (through-hole)'],
-  D1: ['0805', '5 mm through-hole'],
-  SW1: ['SMD 6x6', '12 × 12 mm through-hole'],
-  J1: ['JST-PH 2.0 mm', 'JST-XH 2.5 mm'],
-  J2: ['JST-PH 2.0 mm', 'JST-XH 2.5 mm'],
-};
-const WIDTHS = [0.25, 0.5, 0.9, 1.2];
-
 export async function capstonePage(main: HTMLElement): Promise<() => void> {
   const { Stage } = await import('../three/stage');
   const { Effects } = await import('../three/effects');
-  const { nightLight, PcbBoard, PART_INFO, disposeObject } = await import('../three/pcb');
-  const { contactShadow, mesh, std } = await import('../three/lib');
+  const lib = await import('../three/lib');
+  const iot = await import('../three/iot');
+  const { espBench } = await import('../lessons/kit');
 
   const prog = load();
-  const done = new Set<StepKey>(Object.keys(prog.capstone) as StepKey[]);
+  const done = new Set<StepKey>(Object.keys(prog.capstone).filter((k) => STEPS.some((s) => s.key === k)) as StepKey[]);
   let cur: StepKey = STEPS.find((s) => !done.has(s.key))?.key ?? 'cert';
-  const st = {
-    fp: {} as Record<string, string>,
-    c1Near: '' as string,
-    placed: done.has('place'),
-    routed: done.has('route'),
-    width: done.has('route') ? 0.9 : 0.5,
-    psOn: false,
-    limit: 3.0,
-    strip: false,
-    safeFirst: false,
-    stripLit: false,
-  };
 
   // ---- page layout
-  main.append(h('div', { class: 'lesson-head' }, h('span', { class: 'kicker' }, 'Capstone · 15 min'), h('h1', null, 'Build the night-light board')));
+  main.append(h('div', { class: 'lesson-head' }, h('span', { class: 'kicker' }, 'Capstone · 15 min'), h('h1', null, 'Build Plant Buddy')));
   const left = h('div', { class: 'left' });
   const right = h('div', { class: 'right' });
   main.append(h('div', { class: 'lesson' }, left, right));
-  left.append(h('div', { class: 'prompt-box' }, 'Design a real board from start to finish: schematic, footprints, layout, checks, and a virtual power-up.'));
+  left.append(h('div', { class: 'prompt-box' }, 'Wire up the whole Plant Buddy, check it can run for months on its battery, fix a friend\'s faulty build, and watch it water the plant.'));
   const wrap = h('div', { class: 'stage-wrap' });
   left.append(wrap);
   const panelHost = h('div');
   left.append(panelHost);
   const stepsNav = h('div', { class: 'steps', 'aria-label': 'Capstone steps' });
   const info = h('section', { class: 'card explain' });
-  right.append(h('section', { class: 'card' }, h('h2', null, 'Your project'), h('p', { class: 'note' }, `A 5 V night-light: a microcontroller (U1) reads a button (SW1) and switches a ${STRIP_AMPS} A LED strip through a MOSFET (Q1). An indicator LED (D1) shows it is on.`), stepsNav), info);
+  right.append(h('section', { class: 'card' }, h('h2', null, 'Your project'), h('p', { class: 'note' }, 'Plant Buddy: an ESP32 reads a soil-moisture sensor and a BME280, shows its status on an LED, and switches a small pump through a MOSFET when the soil gets dry.'), stepsNav), info);
 
   const stage = new Stage(wrap);
   const fx = new Effects(stage.real);
   stage.onUpdate((dt) => fx.update(dt));
   let panel = new Panel(panelHost);
-  let boardObj: THREE.Object3D | null = null;
-  let exploder: Exploder | null = null;
-  const extras = new THREE.Group();
-  stage.real.add(extras, contactShadow(12, 9));
 
-  // ---- 3D board for the current stage of the design
-  function showBoard() {
-    if (boardObj) {
-      stage.real.remove(boardObj);
-      disposeObject(boardObj);
-      boardObj = null;
-    }
-    exploder = null;
-    const holder = new THREE.Group();
-    holder.scale.setScalar(1.6);
-    if (!done.has('footprints')) {
-      const blank = new PcbBoard(50, 30);
-      blank.silkDraw = (g, px) => {
-        g.font = `bold ${px(2)}px system-ui`;
-        g.fillText('NIGHT-LIGHT v1', px(14), px(16));
-      };
-      blank.finish();
-      holder.add(blank.group);
-      stage.part(blank.layers.maskTop, { name: 'Blank board', job: 'Pads, parts and copper appear as you design.', symbol: 'pcb' });
-    } else {
-      const routed = st.routed;
-      const nl = nightLight({ withParts: st.placed, powerWidth: st.width, missing: routed ? [] : nightlightDesign().traces.map((t) => t.id) });
-      holder.add(nl.board.group);
-      for (const [ref, obj] of Object.entries(nl.parts)) stage.part(obj, { name: PART_INFO[ref].name, job: PART_INFO[ref].job, symbol: PART_INFO[ref].symbol });
-      stage.part(nl.board.layers.maskTop, { name: 'Night-light board', job: routed ? 'Routed: every net is joined by copper.' : 'Pads placed; copper not routed yet.', symbol: 'pcb' });
-      const parts = new THREE.Group();
-      for (const p of Object.values(nl.parts)) parts.add(p);
-      nl.board.group.add(parts);
-      exploder = new Exploder(stage, [...nl.board.explodeItems(0.45).map((i, k) => ({ ...i, offset: i.offset.clone().add(new THREE.Vector3(0, 0, -(k - 2) * 0.5)) })), { obj: parts, offset: new THREE.Vector3(0, 2.0, -2.0) }]);
-      ledMat = nl.led;
-    }
-    stage.real.add(holder);
-    boardObj = holder;
-    stage.frame({ dir: new THREE.Vector3(0, 1.4, 1), animate: false });
-  }
-  let ledMat: THREE.MeshStandardMaterial | null = null;
-  // Per-step frame listener (removed when switching steps).
-  let cleanupStep: (() => void) | null = null;
+  // ---- the build (everything exists from the start; steps reveal it)
+  const ctxLike = { stage, panel, fx, fxWater: fx, lesson: LESSONS[0], fail: () => {}, clearFail: () => {} };
+  const b = espBench(ctxLike, { cols: 40 });
+  const H = b.H;
+  const groups = { power: new THREE.Group(), led: new THREE.Group(), sensors: new THREE.Group(), pump: new THREE.Group() };
+  for (const g of Object.values(groups)) b.bb.group.add(g);
+  const J = (g: THREE.Group, a: THREE.Vector3, c: THREE.Vector3, color: Parameters<typeof b.jumper>[2], name: string, hh = 0.6) => {
+    const j = b.jumper(a, c, color, name, '', hh);
+    g.add(j.group);
+    return j;
+  };
+  // 1. Power: 3V3 and GND to the front rails, VIN (5 V) and GND to the back rails.
+  J(groups.power, b.free('3V3'), H(1, 'bot+'), 'red', '3V3 to the front red rail', 0.5);
+  J(groups.power, b.free('GND'), H(2, 'bot-'), 'black', 'GND to the front blue rail', 0.5);
+  J(groups.power, b.free('VIN'), H(1, 'top+'), 'red', 'VIN (5 V) to the back red rail', 0.5);
+  J(groups.power, b.free('GND2'), H(2, 'top-'), 'black', 'GND to the back blue rail', 0.5);
+  // 2. Status LED on D16 through 220 Ω.
+  const res = lib.resistor(220, H(18, 9).distanceTo(H(22, 9)));
+  res.group.position.copy(H(18, 9).lerp(H(22, 9), 0.5));
+  const led = lib.led('red');
+  led.group.position.copy(H(22, 7).lerp(H(23, 7), 0.5));
+  groups.led.add(res.group, led.group);
+  J(groups.led, b.free('D16'), H(18, 6), 'yellow', 'Status LED signal (D16)');
+  J(groups.led, H(23, 8), H(23, 'bot-'), 'black', '', 0.5);
+  stage.part(led.group, { name: 'Status LED', job: 'Blinks each time Plant Buddy reports over Wi-Fi.', symbol: 'led' });
+  // 3. Sensors: BME280 on I2C, soil sensor in the pot on D32.
+  const bme = iot.bme280();
+  bme.group.position.copy(H(26, 8)).add(new THREE.Vector3(1.5 * b.bb.pitch, 0, 0));
+  groups.sensors.add(bme.group);
+  stage.part(bme.group, { name: 'BME280 (I2C 0x76)', job: 'Temperature, humidity and pressure, on SDA D21 and SCL D22.', symbol: 'sensor' });
+  J(groups.sensors, H(26, 9), H(26, 'bot+'), 'red', '', 0.4);
+  J(groups.sensors, H(27, 9), H(27, 'bot-'), 'black', '', 0.5);
+  J(groups.sensors, H(28, 6), b.free('D22'), 'yellow', 'BME280 SCL to D22', 1.4);
+  J(groups.sensors, H(29, 7), b.free('D21'), 'blue', 'BME280 SDA to D21', 1.7);
+  const plant = iot.pottedPlant();
+  plant.group.scale.setScalar(0.8);
+  plant.group.position.set(9.4, -0.85, -2.4);
+  b.bb.group.add(plant.group);
+  stage.part(plant.group, { name: 'The plant', job: 'What Plant Buddy looks after.', symbol: 'sensor' });
+  const soil = iot.soilSensor();
+  soil.group.scale.setScalar(0.6);
+  soil.group.position.copy(plant.group.position).add(new THREE.Vector3(-0.35, 0.3, 0.3));
+  groups.sensors.add(soil.group);
+  stage.part(soil.group, { name: 'Soil-moisture sensor (on D32)', job: 'Wetter soil gives a lower reading. Read on GPIO 32, an ADC1 pin that works with Wi-Fi on.', symbol: 'sensor' });
+  const soilPin = (k: 'GND' | 'VCC' | 'AOUT') => soil.pins[k].clone().multiplyScalar(0.6).add(soil.group.position);
+  const soilLead = (k: 'GND' | 'VCC' | 'AOUT', to: THREE.Vector3, c: 'black' | 'red' | 'yellow') => {
+    const a = soilPin(k);
+    const w = lib.wire([a, a.clone().add(new THREE.Vector3(0, 0.5, 0.3)), to.clone().setY(1.4), to.clone().setY(0.7), to.clone()], c, 0.04, 0.3);
+    groups.sensors.add(w.mesh);
+  };
+  soilLead('GND', H(37, 'bot-'), 'black');
+  soilLead('VCC', H(36, 'bot+'), 'red');
+  soilLead('AOUT', b.free('D32'), 'yellow');
+  // 4. Pump driver: IRLZ44N on D26 with 220 Ω gate resistor, 10 kΩ pull-down, flyback diode, pump in a cup.
+  const q = lib.mosfetTO220();
+  q.group.position.copy(H(33, 2));
+  groups.pump.add(q.group);
+  stage.part(q.body, { name: 'MOSFET (IRLZ44N)', job: 'Switches the pump from D26.', symbol: 'mosfet' });
+  const rg = lib.resistor(220, H(28, 1).distanceTo(H(32, 1)));
+  rg.group.position.copy(H(28, 1).lerp(H(32, 1), 0.5));
+  const rpd = lib.resistor(10000, H(32, 4).distanceTo(H(36, 4)));
+  rpd.group.position.copy(H(32, 4).lerp(H(36, 4), 0.5));
+  const dio = iot.axialDiode(H(33, 3).distanceTo(H(37, 3)));
+  dio.group.position.copy(H(33, 3).lerp(H(37, 3), 0.5));
+  groups.pump.add(rg.group, rpd.group, dio.group);
+  J(groups.pump, b.free('D26'), H(28, 0), 'yellow', 'Pump control (D26)', 0.9);
+  J(groups.pump, H(36, 0), H(36, 'top-'), 'black', '', 0.5);
+  J(groups.pump, H(34, 0), H(34, 'top-'), 'black', '', 0.5);
+  J(groups.pump, H(37, 1), H(37, 'top+'), 'red', '', 0.5);
+  const cup = iot.pumpInCup();
+  cup.group.scale.setScalar(0.7);
+  cup.group.position.set(6.6, -0.85, -4.9);
+  groups.pump.add(cup.group);
+  stage.part(cup.group, { name: 'Pump', job: '5 V, about 150 mA. Waters the plant.', symbol: 'motor' });
+  const leadTop = cup.leads.clone().multiplyScalar(0.7).add(cup.group.position);
+  groups.pump.add(lib.wire([leadTop, leadTop.clone().setY(1.6), H(39, 'top+').setY(1.2), H(39, 'top+')], 'red', 0.04, 0.3).mesh);
+  groups.pump.add(lib.wire([leadTop, leadTop.clone().setY(1.4), H(33, 0).setY(1.0), H(33, 0)], 'blue', 0.04, 0.3).mesh);
+  const statusLabel = stage.label('', b.esp.group, new THREE.Vector3(0.8, 2.3, -0.6), 'big');
+  statusLabel.show(false);
 
-  // LED strip + supply (power step).
-  const stripG = new THREE.Group();
-  stripG.position.set(0, -0.05, 3.4);
-  stripG.add(mesh(new THREE.BoxGeometry(7, 0.04, 0.4), std('#f4f4f0', 0.6), [0, 0, 0]));
-  const stripMats: THREE.MeshStandardMaterial[] = [];
-  for (let i = 0; i < 18; i++) {
-    const m = std('#fff8e6', 0.3, 0, { emissive: new THREE.Color('#ffe9b0'), emissiveIntensity: 0 });
-    stripMats.push(m);
-    stripG.add(mesh(new THREE.BoxGeometry(0.2, 0.06, 0.2), m, [-3.3 + i * 0.39, 0.05, 0]));
+  function showBuild() {
+    const idx = STEPS.findIndex((s) => s.key === cur);
+    const upto = (k: StepKey) => done.has(k) || STEPS.findIndex((s) => s.key === k) < idx;
+    groups.power.visible = upto('power') || cur === 'power';
+    groups.led.visible = upto('led') || cur === 'led';
+    groups.sensors.visible = upto('sensors') || cur === 'sensors';
+    groups.pump.visible = upto('pump') || cur === 'pump';
   }
-  stripG.visible = false;
-  extras.add(stripG);
-  stage.part(stripG, { name: `LED strip (${STRIP_AMPS} A)`, job: 'The big load, switched by Q1.', symbol: 'led' });
+  // Steps show parts only once they are wired correctly.
+  const reveal = (g: THREE.Group, on: boolean) => (g.visible = on);
 
   // ---- step rendering
   function renderNav() {
     stepsNav.innerHTML = '';
     STEPS.forEach((s, i) => {
       const reachable = i === 0 || done.has(STEPS[i - 1].key) || done.has(s.key);
-      const b = h('button', { class: `st ${done.has(s.key) ? 'done' : s.key === cur ? 'cur' : ''}`, type: 'button', disabled: !reachable, 'aria-current': s.key === cur ? 'step' : undefined }, `${i + 1}. ${s.title}${done.has(s.key) ? ' ✓' : ''}`);
-      b.style.cursor = reachable ? 'pointer' : 'not-allowed';
-      b.addEventListener('click', () => go(s.key));
-      stepsNav.append(b);
+      const btn = h('button', { class: `st ${done.has(s.key) ? 'done' : s.key === cur ? 'cur' : ''}`, type: 'button', disabled: !reachable, 'aria-current': s.key === cur ? 'step' : undefined }, `${i + 1}. ${s.title}${done.has(s.key) ? ' ✓' : ''}`);
+      btn.style.cursor = reachable ? 'pointer' : 'not-allowed';
+      btn.addEventListener('click', () => go(s.key));
+      stepsNav.append(btn);
     });
   }
   function complete(k: StepKey, msg: string) {
+    const first = !done.has(k);
     done.add(k);
     setCapstone(k);
-    toast(msg);
+    if (first) toast(msg);
     renderNav();
     const i = STEPS.findIndex((s) => s.key === k);
-    if (i < STEPS.length - 1) {
-      const nxt = h('button', { class: 'btn primary', type: 'button', onclick: () => go(STEPS[i + 1].key) }, `Next: ${STEPS[i + 1].title} →`);
+    if (i < STEPS.length - 1 && !panelHost.querySelector('.next-step')) {
+      const nxt = h('button', { class: 'btn primary next-step', type: 'button', onclick: () => go(STEPS[i + 1].key) }, `Next: ${STEPS[i + 1].title} →`);
       panel.custom(nxt);
       nxt.focus();
     }
@@ -189,6 +168,7 @@ export async function capstonePage(main: HTMLElement): Promise<() => void> {
     info.innerHTML = '';
     info.append(h('h2', null, title), ...paras.map((p) => h('p', { html: rich(p) })));
   }
+  let cleanupStep: (() => void) | null = null;
 
   function go(k: StepKey) {
     cleanupStep?.();
@@ -196,167 +176,224 @@ export async function capstonePage(main: HTMLElement): Promise<() => void> {
     cur = k;
     panelHost.innerHTML = '';
     panel = new Panel(panelHost);
-    stripG.visible = false;
     fx.clear();
+    statusLabel.show(false);
     renderNav();
-    showBoard();
-    ({ schematic: stepSchematic, footprints: stepFootprints, place: stepPlace, route: stepRoute, drc: stepDrc, view: stepView, power: stepPower, cert: stepCert })[k]();
-    // Without WebGL: show the parts diagram and keep the simulation ticking.
+    showBuild();
+    ({ power: stepPower, led: stepLed, sensors: stepSensors, pump: stepPump, budget: stepBudget, faults: stepFaults, run: stepRun, cert: stepCert })[k]();
+    stage.frame({ dir: new THREE.Vector3(0.05, 1.35, 1), animate: true });
     stage.renderFallback();
     stage.startFallbackLoop();
   }
 
-  // 1. Schematic
-  function stepSchematic() {
-    setInfo('1. Draw the schematic', [
-      'Connect the pins so that the nets match the goal list. Tap one pin, then another (or use the keyboard controls).',
-      'Tip: **+5V** joins J1 +, U1 VCC, C1, R1 and J2 +. **GND** joins everything that returns to the battery\'s −.',
-    ]);
-    const ed = new SchematicEditor(SCH, GOAL, { width: 700, height: 390 });
-    panel.custom(ed.el);
-    panel.custom(ed.controls());
-    const row = panel.row();
-    panel.button('Check my schematic', () => {
-      const s = ed.status();
-      if (s.ok) complete('schematic', 'Schematic complete: 7 nets.');
-      else toast(s.shorts.length ? 'Two nets are shorted together.' : `Still to finish: ${Object.keys(GOAL).filter((n) => !s.complete.includes(n)).join(', ')}`);
-    }, 'btn primary', row);
-    panel.button('Show me one net', () => {
-      const s = ed.status();
-      const missing = Object.keys(GOAL).find((n) => !s.complete.includes(n));
-      if (!missing) return;
-      const pins = GOAL[missing];
-      for (let i = 1; i < pins.length; i++) ed.connect(pins[0], pins[i]);
-    }, 'btn', row);
-    if (done.has('schematic')) for (const pins of Object.values(GOAL)) for (let i = 1; i < pins.length; i++) ed.connect(pins[0], pins[i]);
-  }
-
-  // 2. Footprints
-  function stepFootprints() {
-    setInfo('2. Choose footprints', ['Each part number tells you its package. Pick the matching footprint for every part.', 'Careful with J2: it carries the 3 A strip current, and JST-PH contacts are rated for 2 A. JST-XH handles 3 A.']);
-    const body = h('tbody');
-    const table = h('table', { class: 'datasheet' }, h('thead', null, h('tr', null, h('th', null, 'Ref'), h('th', null, 'Part'), h('th', null, 'Footprint'))), body);
-    for (const r of BOM) {
-      const sel = h('select', { 'aria-label': `Footprint for ${r.ref}` }, h('option', { value: '' }, '— choose —'), FP_CHOICES[r.ref].map((c) => h('option', { value: c }, c))) as HTMLSelectElement;
-      sel.value = st.fp[r.ref] ?? (done.has('footprints') ? r.footprint : '');
-      sel.addEventListener('change', () => (st.fp[r.ref] = sel.value));
-      if (sel.value) st.fp[r.ref] = sel.value;
-      body.append(h('tr', null, h('td', null, r.ref), h('td', null, `${r.mpn} (${r.value})`), h('td', null, sel)));
+  /** A row of "X goes to …" selects; calls back with the full mapping on every change. */
+  function wiringStep(rows: { key: string; label: string; options: { value: string; label: string }[] }[], onChange: (m: Record<string, string>) => void) {
+    const m: Record<string, string> = {};
+    for (const r of rows) {
+      m[r.key] = '';
+      panel.select(r.label, [{ value: '', label: 'Choose…' }, ...r.options], '', (v) => {
+        m[r.key] = v;
+        onChange(m);
+      });
     }
-    panel.custom(h('div', { class: 'table-wrap' }, table));
-    const fb = panel.note('');
-    panel.button('Check footprints', () => {
-      const wrong = BOM.filter((r) => st.fp[r.ref] !== r.footprint);
-      if (!wrong.length) {
-        fb.set('All nine match their datasheets ✓');
-        complete('footprints', 'Footprints assigned: pads appear on the board.');
-        showBoard();
-      } else fb.set(`Not yet: check ${wrong.map((r) => r.ref).join(', ')}. ${wrong.some((r) => r.ref === 'J2') ? 'J2 must handle 3 A.' : ''}`, 'note warn');
-    }, 'btn primary');
+    return m;
   }
 
-  // 3. Placement
-  function stepPlace() {
-    setInfo('3. Place the parts', ['Placement matters before any routing. Big rule: decoupling capacitors go right at the pin they serve.']);
-    const q = panel.segmented('Where should C1 (100 nF) go?', [{ value: 'u1', label: "Right at U1's VCC pin" }, { value: 'j1', label: 'Next to the battery connector J1' }, { value: 'any', label: 'Anywhere on the +5V net' }], st.c1Near || 'any', (v) => (st.c1Near = v));
-    void q;
-    const fb = panel.note('');
-    panel.button('Place all parts', () => {
-      if (st.c1Near !== 'u1') {
-        fb.set('C1 only works when it is millimetres from U1\'s VCC pin (lesson 5.3). Pick that option.', 'note warn');
-        return;
-      }
-      st.placed = true;
-      showBoard();
-      complete('place', 'Parts placed.');
-    }, 'btn primary');
-  }
-
-  // 4. Routing
-  function stepRoute() {
-    setInfo('4. Route the copper', [`Signals can use thin 0.25 mm traces. The two power traces carry the strip's ${STRIP_AMPS} A: pick a width that keeps them within +20 °C.`]);
-    const sel = panel.select('Power trace width', WIDTHS.map((w) => ({ value: String(w), label: `${w} mm → +${traceRise(w, STRIP_AMPS).toFixed(0)} °C at ${STRIP_AMPS} A` })), String(st.width), (v) => (st.width = Number(v)));
-    void sel;
-    panel.button('Route the board', () => {
-      st.routed = true;
-      showBoard();
-      complete('route', 'Routed. Now run the checks.');
-    }, 'btn primary');
-  }
-
-  // 5. Checks
-  function stepDrc() {
-    setInfo('5. Run the checks', ['DRC checks the layout against the factory rules, ERC checks the schematic, and a current check makes sure no trace overheats.']);
-    const out = h('div', { class: 'note', 'aria-live': 'polite' });
-    panel.custom(out);
-    panel.button('Run DRC + ERC + current check', () => {
-      const drc = runDrc(nightlightDesign({ powerWidth: st.width }));
-      const erc = runErc(nightlightErcPins());
-      const rise = traceRise(st.width, STRIP_AMPS);
-      const cur = rise > 20 ? [`Current: the ${st.width} mm power traces would heat +${rise.toFixed(0)} °C at ${STRIP_AMPS} A (limit +20 °C). Go back to Routing and widen them.`] : [];
-      const all = [...drc.map((e) => e.msg), ...erc.map((e) => e.msg), ...cur];
-      out.innerHTML = '';
-      if (!all.length) {
-        out.append(h('p', { style: { color: 'var(--good)', fontWeight: '700', margin: 0 } }, 'DRC: 0 errors · ERC: 0 errors · current: OK ✓'));
-        complete('drc', 'Zero unexplained errors. Ready to view.');
-      } else {
-        out.append(h('ul', null, all.map((m) => h('li', null, m))));
-        if (cur.length) panel.button('← Back to routing', () => go('route'), 'btn');
-      }
-    }, 'btn primary');
-  }
-
-  // 6. View
-  function stepView() {
-    setInfo('6. Admire it in 3D', ['Pull it apart to see every layer you designed: silkscreen, mask, copper, core and the ground plane.']);
-    exploder?.controls(panel, 'Explode the board');
-    panel.button('Looks good →', () => complete('view', 'Time to switch it on.'), 'btn primary');
-  }
-
-  // 7. Power-up
+  // 1. Power rails
   function stepPower() {
-    setInfo('7. Bring it up', ['First power-up: limit the current to 100 mA or less with the strip **disconnected**, and check that the board draws only its normal current.', `Then connect the strip, raise the limit above ${STRIP_AMPS} A, and press the button.`]);
-    stripG.visible = true;
-    const lim = panel.slider({ label: 'Current limit', min: 0.01, max: 4, log: true, value: st.limit, nudge: true, snap: (v) => (v < 0.1 ? Math.round(v * 1000) / 1000 : Math.round(v * 10) / 10), format: (v) => (v < 1 ? `${(v * 1000).toFixed(0)} mA` : `${v.toFixed(1)} A`), onInput: (v) => { st.limit = v; } });
-    void lim;
+    setInfo('1. Power rails', ['Give the breadboard its power rails. The front rails carry **3.3 V** for the logic and sensors; the back rails carry **5 V** from VIN for the pump. Every rail pair needs GND too.']);
+    const pins = [
+      { value: '3V3', label: '3V3' },
+      { value: 'VIN', label: 'VIN (5 V from USB)' },
+      { value: 'GND', label: 'GND' },
+    ];
+    const note = panel.note('');
+    reveal(groups.power, done.has('power'));
+    wiringStep(
+      [
+        { key: 'frontRed', label: 'Front red rail (logic) ← ESP32 pin', options: pins },
+        { key: 'frontBlue', label: 'Front blue rail ← ESP32 pin', options: pins },
+        { key: 'backRed', label: 'Back red rail (pump) ← ESP32 pin', options: pins },
+        { key: 'backBlue', label: 'Back blue rail ← ESP32 pin', options: pins },
+      ],
+      (m) => {
+        const ok = m.frontRed === '3V3' && m.frontBlue === 'GND' && m.backRed === 'VIN' && m.backBlue === 'GND';
+        const wrong = m.frontRed === 'VIN' ? 'The front rail feeds the 3.3 V sensors: 5 V would damage them.' : m.frontRed === 'GND' || m.backRed === 'GND' ? 'A red rail on GND, and a blue rail on GND too, means no power at all.' : m.backRed === '3V3' ? 'The pump needs 5 V: use VIN for the back rail.' : '';
+        note.set(ok ? 'Rails ready: 3.3 V front, 5 V back, GND on both blue rails.' : wrong, ok ? 'note' : 'note warn');
+        reveal(groups.power, ok);
+        if (ok) complete('power', 'Power rails done');
+      },
+    );
+  }
+
+  // 2. Status LED
+  function stepLed() {
+    setInfo('2. Status LED', ['Plant Buddy blinks an LED each time it reports. Put a red LED (2.0 V) on **GPIO 16** with a resistor that keeps it between **5 and 15 mA**.']);
+    const note = panel.note('');
+    reveal(groups.led, done.has('led'));
+    wiringStep(
+      [
+        { key: 'pin', label: 'LED signal pin', options: [{ value: 'D16', label: 'D16 (GPIO 16)' }, { value: 'D34', label: 'D34 (GPIO 34)' }, { value: '3V3', label: '3V3 (always on)' }] },
+        { key: 'r', label: 'Resistor', options: [{ value: '0', label: 'none' }, { value: '47', label: '47 Ω' }, { value: '220', label: '220 Ω' }, { value: '10000', label: '10 kΩ' }] },
+      ],
+      (m) => {
+        const r = Number(m.r);
+        const I = r > 0 ? (3.3 - 2.0) / r : Infinity;
+        let msg = '';
+        if (m.pin === 'D34') msg = 'GPIO 34 is input-only: it cannot drive an LED.';
+        else if (m.pin === '3V3') msg = 'On 3V3 the LED would always be on: the code could never blink it.';
+        else if (m.r === '0') msg = 'No resistor: nothing limits the current, and the LED (and the pin) burn out.';
+        else if (m.r && I > 0.015) msg = `${(I * 1000).toFixed(1)} mA: too much for a status LED (and over 20 mA).`;
+        else if (m.r && I < 0.005) msg = `${(I * 1000).toFixed(2)} mA: far too dim to see.`;
+        const ok = m.pin === 'D16' && I >= 0.005 && I <= 0.015;
+        note.set(ok ? `D16 → 220 Ω → LED: ${(I * 1000).toFixed(1)} mA. Bright enough, gentle on the pin.` : msg, ok ? 'note' : 'note warn');
+        reveal(groups.led, ok);
+        led.setLight(ok ? 0.5 : 0);
+        if (ok) complete('led', 'Status LED done');
+      },
+    );
+  }
+
+  // 3. Sensors
+  function stepSensors() {
+    setInfo('3. Sensors', ['Wire the soil sensor\'s analog output to an **ADC1** pin (it has to work with Wi-Fi on), and the BME280 to the ESP32\'s default **I2C** pins. Both run on 3.3 V.']);
+    const note = panel.note('');
+    reveal(groups.sensors, done.has('sensors'));
+    const gp = (ids: string[]) => ids.map((v) => ({ value: v, label: v }));
+    wiringStep(
+      [
+        { key: 'aout', label: 'Soil sensor AOUT → ESP32 pin', options: gp(['D4', 'D32', 'D21']) },
+        { key: 'svcc', label: 'Soil sensor VCC → rail', options: [{ value: '3V3', label: 'front red rail (3.3 V)' }, { value: '5V', label: 'back red rail (5 V)' }] },
+        { key: 'sda', label: 'BME280 SDA → ESP32 pin', options: gp(['D21', 'D22', 'D32']) },
+        { key: 'scl', label: 'BME280 SCL → ESP32 pin', options: gp(['D21', 'D22', 'D4']) },
+      ],
+      (m) => {
+        let msg = '';
+        if (m.aout === 'D4') msg = 'D4 is an ADC2 pin: its readings stop working while Wi-Fi is on.';
+        else if (m.aout === 'D21') msg = 'D21 is the I2C data pin; the soil sensor needs an ADC pin.';
+        else if (m.svcc === '5V') msg = 'At 5 V the sensor\'s output could go over 3.3 V. Power it from 3.3 V.';
+        else if (m.sda && m.scl && m.sda === m.scl) msg = 'SDA and SCL need two different pins.';
+        else if (m.sda === 'D22' && m.scl === 'D21') msg = 'SDA and SCL are swapped.';
+        const ok = m.aout === 'D32' && m.svcc === '3V3' && m.sda === 'D21' && m.scl === 'D22';
+        note.set(ok ? 'Soil sensor on ADC1 (D32), BME280 on I2C (D21/D22): an I2C scan finds 0x76.' : msg, ok ? 'note' : 'note warn');
+        reveal(groups.sensors, ok);
+        if (ok) complete('sensors', 'Sensors done');
+      },
+    );
+  }
+
+  // 4. Pump driver
+  function stepPump() {
+    setInfo('4. Pump driver', ['The pump needs about 150 mA at 5 V, far more than a pin can give. Build the switch: pick the parts a safe pump driver needs.']);
+    const note = panel.note('');
+    reveal(groups.pump, done.has('pump'));
+    const parts = { mosfet: false, pulldown: false, diode: false, direct: false };
     const row = panel.row();
-    const onBtn = panel.button(st.psOn ? 'Output OFF' : 'Output ON', () => {
-      st.psOn = !st.psOn;
-      onBtn.textContent = st.psOn ? 'Output OFF' : 'Output ON';
-      if (st.psOn && !st.strip && st.limit <= 0.1 + 1e-9) st.safeFirst = true;
-      if (st.psOn && !st.safeFirst) toast('No short this time, but always limit the current on a first power-up. Switch off and try with 100 mA.');
+    const tg = (k: keyof typeof parts, label: string) =>
+      panel.toggle(label, false, (v) => {
+        parts[k] = v;
+        update();
+      }, row);
+    tg('direct', 'Pump straight on D26');
+    tg('mosfet', 'Logic-level MOSFET (IRLZ44N)');
+    tg('pulldown', '10 kΩ gate pull-down');
+    tg('diode', 'Flyback diode across the pump');
+    function update() {
+      const ok = parts.mosfet && parts.pulldown && parts.diode && !parts.direct;
+      const msg = parts.direct ? 'A pin cannot power a pump: about 150 mA needed, the pin gives about 20 mA.' : !parts.mosfet ? 'Something has to carry the pump\'s current: a logic-level MOSFET.' : !parts.diode ? 'Without a flyback diode, every switch-off sends a spike into the MOSFET.' : !parts.pulldown ? 'Without a pull-down, the pump could twitch on while the ESP32 boots.' : '';
+      note.set(ok ? 'D26 → 220 Ω → MOSFET gate, 10 kΩ pull-down, flyback diode across the pump: safe and cool.' : msg, ok ? 'note' : 'note warn');
+      reveal(groups.pump, ok);
+      if (ok) complete('pump', 'Pump driver done');
+    }
+    update();
+  }
+
+  // 5. Power budget
+  function stepBudget() {
+    setInfo('5. Power budget', [`Plant Buddy runs on a **${CAPSTONE.capacity} mAh** cell. Choose a board and a wake-up plan so it lasts **more than ${CAPSTONE.targetDays} days**. Awake (measuring and sending) it draws about ${CAPSTONE.awakeMa} mA for ${CAPSTONE.awakeS} s.`]);
+    const s = { board: 'devkit' as 'devkit' | 'lowpower', every: 1 };
+    panel.segmented('Board', [{ value: 'devkit', label: 'DevKit (5 mA asleep)' }, { value: 'lowpower', label: 'Low-power board (10 µA asleep)' }], s.board, (v) => { s.board = v as 'devkit' | 'lowpower'; upd(); });
+    panel.select('Wake up every', CAPSTONE.intervals.map((m) => ({ value: String(m), label: `${m} min` })), '1', (v) => { s.every = Number(v); upd(); });
+    const ro = panel.readout('Battery life');
+    function upd() {
+      const d = budgetDays(s.board, s.every);
+      ro.set(`${d.toFixed(0)} days`, d > CAPSTONE.targetDays ? 'good' : 'warn');
+      if (d > CAPSTONE.targetDays) complete('budget', 'Power budget done');
+    }
+    upd();
+  }
+
+  // 6. Fix three faults
+  function stepFaults() {
+    setInfo('6. Fix three faults', ['A friend built a second Plant Buddy and it misbehaves in three ways. For each symptom, choose the fix.']);
+    const results: Record<string, boolean> = {};
+    for (const f of CAPSTONE.faults) {
+      results[f.id] = false;
+      panel.select(f.symptom, [{ value: '', label: 'Choose a fix…' }, ...f.fixes.map((x, i) => ({ value: String(i), label: x.text }))], '', (v) => {
+        const fix = f.fixes[Number(v)];
+        results[f.id] = !!fix?.correct;
+        note.set(fix ? fix.why : '', fix?.correct ? 'note' : 'note warn');
+        if (fix?.correct) stage.spotlight(f.id === 'adc' ? soil.group : f.id === 'led' ? led.group : q.group);
+        const n = Object.values(results).filter(Boolean).length;
+        ro.set(`${n} of ${CAPSTONE.faults.length}`, n === CAPSTONE.faults.length ? 'good' : '');
+        if (n === CAPSTONE.faults.length) complete('faults', 'All three faults fixed');
+      });
+    }
+    const note = panel.note('');
+    const ro = panel.readout('Faults fixed');
+    ro.set(`0 of ${CAPSTONE.faults.length}`);
+  }
+
+  // 7. Run it
+  function stepRun() {
+    setInfo('7. Run it', ['Switch Plant Buddy on and speed up time. When the soil drops below **30%**, it switches the pump on until the soil is wet again, and reports each reading over Wi-Fi (the status LED blinks).']);
+    let running = false;
+    let m = 0.45; // true moisture
+    let pumping = false;
+    let watered = 0;
+    let t = 0;
+    const row = panel.row();
+    const btn = panel.button('Switch on (time-lapse)', () => {
+      running = !running;
+      btn.textContent = running ? 'Pause' : 'Switch on (time-lapse)';
     }, 'btn primary', row);
-    const stripBtn = panel.button(st.strip ? 'Disconnect the strip' : 'Connect the LED strip', () => {
-      st.strip = !st.strip;
-      stripBtn.textContent = st.strip ? 'Disconnect the strip' : 'Connect the LED strip';
-    }, 'btn', row);
-    let lit = false;
-    panel.button('Press SW1', () => {
-      lit = !lit;
-    }, 'btn', row);
-    const roI = panel.readout('Board current');
-    const roS = panel.readout('Status');
-    const stop = stage.onUpdate(() => {
-      const want = (st.psOn ? 0.02 : 0) + (st.psOn && st.strip && lit ? STRIP_AMPS : 0);
-      const I = Math.min(want, st.limit);
-      const cc = st.psOn && want > st.limit + 1e-9;
-      roI.set(I < 1 ? `${(I * 1000).toFixed(0)} mA` : `${I.toFixed(2)} A`, cc ? 'warn' : '');
-      const stripOn = st.psOn && st.strip && lit;
-      const level = stripOn ? Math.min(1, (st.limit - 0.02) / STRIP_AMPS) : 0;
-      stripMats.forEach((m) => (m.emissiveIntensity = level * 3));
-      if (ledMat) ledMat.emissiveIntensity = st.psOn && lit ? 3 : 0.05;
-      roS.set(!st.psOn ? 'off' : cc ? `current limit (${st.limit < 1 ? (st.limit * 1000).toFixed(0) + ' mA' : st.limit.toFixed(1) + ' A'}): raise it for the strip` : stripOn ? `strip on at ${STRIP_AMPS} A ✓` : 'board on, 20 mA: healthy', cc ? 'warn' : 'good');
-      if (stripOn && !cc && st.safeFirst && !done.has('power')) {
-        st.stripLit = true;
-        complete('power', 'It works! Your night-light is on.');
+    const roM = panel.readout('Soil moisture');
+    const roP = panel.readout('Pump');
+    const roW = panel.readout('Waterings');
+    statusLabel.show(true);
+    const stop = stage.onUpdate((dt) => {
+      if (running) {
+        t += dt;
+        m += pumping ? dt * 0.25 : -dt * 0.06;
+        m = Math.max(0, Math.min(1, m));
+        if (!pumping && m < 0.3) pumping = true;
+        if (pumping && m > 0.8) {
+          pumping = false;
+          watered++;
+          if (watered === 1) {
+            fx.confetti?.(plant.group.position.clone().setY(3));
+            complete('run', 'Plant Buddy watered the plant!');
+          }
+        }
       }
+      plant.setMoisture(m);
+      cup.setRunning(pumping, stage.time);
+      led.setLight(running && Math.floor(t * 2) % 4 === 0 ? 0.6 : 0);
+      b.esp.setBlueLed(false);
+      roM.set(`${Math.round(m * 100)}%`, m < 0.3 ? 'warn' : 'good');
+      roP.set(pumping ? 'ON (watering)' : 'off', pumping ? 'good' : '');
+      roW.set(String(watered), watered ? 'good' : '');
+      statusLabel.set(running ? `soil ${Math.round(m * 100)}% · 23.4 °C · ${pumping ? 'pump ON' : 'pump off'}` : 'switched off', running ? 'good' : '');
     });
-    cleanupStep = stop;
+    cleanupStep = () => {
+      stop();
+      cup.setRunning(false, 0);
+    };
   }
 
   // 8. Certificate
   function stepCert() {
-    setInfo('8. Your certificate', ['You designed a board end to end. Add your name and download your certificate.']);
+    setInfo('8. Your certificate', ['You built a complete IoT device. Add your name and download your certificate.']);
     const name = h('input', { type: 'text', value: prog.name ?? '', placeholder: 'Your name', 'aria-label': 'Your name', style: { minHeight: '42px', padding: '8px 10px', borderRadius: '10px', border: '1px solid var(--line)', background: 'var(--surface)', width: '100%' } }) as HTMLInputElement;
     panel.custom(h('div', { class: 'ctl' }, h('label', null, 'Name on the certificate'), name));
     const canvas = document.createElement('canvas');
@@ -382,32 +419,32 @@ export async function capstonePage(main: HTMLElement): Promise<() => void> {
       g.fillStyle = '#1f7a4d';
       g.font = 'bold 40px system-ui, sans-serif';
       g.textAlign = 'center';
-      g.fillText('ELECTRONICS IN 20%', 800, 150);
+      g.fillText('ELECTRONICS IN 20% · FOR IoT', 800, 150);
       g.fillStyle = '#1d1f1e';
       g.font = '32px system-ui, sans-serif';
       g.fillText('This certifies that', 800, 240);
       g.font = 'bold 76px Georgia, serif';
       g.fillText(name.value.trim() || 'Your name', 800, 340);
       g.font = '30px system-ui, sans-serif';
-      g.fillText(allDone ? 'designed, checked and brought up the night-light board, and can now:' : 'is working through the course and can now:', 800, 420);
+      g.fillText(allDone ? 'built Plant Buddy, an ESP32 plant monitor, and can now:' : 'is working through the course and can now:', 800, 420);
       const skills = LESSONS.filter((l) => load().done[l.id]).flatMap((l) => l.skills);
       const list = skills.length ? skills : ['(complete lessons to add skills here)'];
       g.textAlign = 'left';
-      g.font = '22px system-ui, sans-serif';
+      g.font = '20px system-ui, sans-serif';
       const cols = 2;
       const perCol = Math.ceil(list.length / cols);
       list.forEach((s, i) => {
         const c = Math.floor(i / perCol);
         const r = i % perCol;
         g.fillStyle = '#1f7a4d';
-        g.fillText('✓', 140 + c * 700, 490 + r * 30);
+        g.fillText('✓', 120 + c * 720, 480 + r * 27);
         g.fillStyle = '#1d1f1e';
-        g.fillText(s.length > 58 ? s.slice(0, 57) + '…' : s, 172 + c * 700, 490 + r * 30);
+        g.fillText(s.length > 60 ? s.slice(0, 59) + '…' : s, 150 + c * 720, 480 + r * 27);
       });
       g.textAlign = 'center';
       g.fillStyle = '#6e736f';
       g.font = '22px system-ui, sans-serif';
-      g.fillText(new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }), 800, 1040);
+      g.fillText(new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }), 800, 1050);
       dl.setAttribute('href', canvas.toDataURL('image/png'));
     };
     name.addEventListener('input', () => {
@@ -423,6 +460,7 @@ export async function capstonePage(main: HTMLElement): Promise<() => void> {
     }
   }
 
+  stage.focusObjects = [b.bb.group, plant.group];
   go(cur);
 
   return () => {

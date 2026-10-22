@@ -81,7 +81,6 @@ export const M1: LessonContent[] = [
           { value: 0.01, msg: 'You used the full 3.3 V. The LED takes 2.0 V first, so only 1.3 V is across the resistor.' },
           { value: 2 / 330, msg: 'That is the LED\'s 2.0 V divided by 330 Ω. The resistor gets what is left: 3.3 V − 2.0 V = 1.3 V.' },
           { value: 0.254, msg: 'That is R ÷ V (330 ÷ 1.3). Current is V ÷ R: 1.3 V ÷ 330 Ω.' },
-          { value: 254, msg: 'That is R ÷ V (330 ÷ 1.3). Current is V ÷ R: 1.3 V ÷ 330 Ω.' },
         ],
       },
       {
