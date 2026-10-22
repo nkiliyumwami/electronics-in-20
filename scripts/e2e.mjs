@@ -142,34 +142,49 @@ const SCENARIOS = {
   },
   async '2.1'(page) {
     let fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet') && /one strip/.test(fb), `both legs on one strip → not yet (${fb.slice(0, 60)})`);
+    await select(page, 'LED position', 'off');
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Not yet'), 'legs in 25/26 → not connected → not yet');
+    await select(page, 'LED position', 'right');
+    const led = await page.locator('.readout:has-text("LED") .v').innerText();
+    fb = await checkTask(page, 3);
+    expect(fb.startsWith('Done') && /lit/.test(led), `legs in 23/24 → ${led} → done`);
+    await select(page, 'Show what is joined to', '24');
+    const lbl = await page.locator('.lbl', { hasText: 'Joined: column 24' }).first().waitFor({ state: 'visible', timeout: 8000 }).then(() => true, () => false);
+    expect(lbl, 'strip explorer labels column 24');
+  },
+  async '2.2'(page) {
+    let fb = await checkTask(page, 3);
     expect(fb.startsWith('Not yet'), 'signal wire only → not yet');
     await select(page, 'Wire from', 'aGnd');
     await select(page, 'Wire to', 'bSig');
     await click(page, 'Add wire');
-    await click(page, "Press A's button");
+    await click(page, "Press the sensor's test button");
     const card = await failCard(page);
-    expect(card && /shorted/.test(card), 'A.GND to B.SIG while pressed → short warning');
+    expect(card && /shorted/.test(card), 'sensor GND to ESP32 input while pressed → short warning');
     await clickIn(page, '.failcard', 'Undo (remove that wire)');
     await select(page, 'Wire from', 'aGnd');
     await select(page, 'Wire to', 'bGnd');
     await click(page, 'Add wire');
     await page.waitForTimeout(300);
-    const reads = await page.locator('.readout:has-text("B reads") .v').innerText();
+    const reads = await page.locator('.readout:has-text("ESP32 reads") .v').innerText();
     fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done') && reads === 'HIGH', `ground wire added, button pressed, B reads ${reads} → done`);
+    expect(fb.startsWith('Done') && reads === 'HIGH', `GND wire added, button pressed, ESP32 reads ${reads} → done`);
   },
-  async '2.2'(page) {
-    await click(page, 'Bridge + to − (short)');
+  async '2.3'(page) {
+    await click(page, 'Bridge 3V3 to GND (short)');
     const card = await failCard(page, 4000);
-    expect(card && /fuse blew/.test(card), `bridge → fuse blows (${(card ?? '').slice(0, 80)})`);
-    await clickIn(page, '.failcard', 'Undo (remove bridge, new fuse)');
-    await click(page, 'Cut red wire');
-    let led = await page.locator('.readout:has-text("LED") .v').innerText();
-    expect(led === 'dark', 'cut red wire → LED dark');
-    await click(page, 'Reconnect red wire');
+    expect(card && /USB port switched off/.test(card), `bridge → USB port cuts out (${(card ?? '').slice(0, 80)})`);
+    await clickIn(page, '.failcard', 'Undo (remove the stray wire)');
+    let esp = await page.locator('.readout:has-text("ESP32") .v').first().innerText();
+    expect(esp === 'running', `after undo the ESP32 is ${esp}`);
+    await click(page, 'Pull out the red jumper');
+    const led = await page.locator('.readout:has-text("LED") .v').innerText();
+    expect(led === 'dark', 'red jumper pulled → LED dark');
+    await click(page, 'Push the red jumper back in');
     await click(page, 'Start the fault hunt');
-    await click(page, 'Disconnect battery');
-    // Probe each wire with continuity; find the silent one.
+    await click(page, 'Unplug USB');
     let broken = null;
     for (const w of ['w1', 'w2', 'w3']) {
       await select(page, 'red probe position', `${w}a`);
@@ -178,23 +193,30 @@ const SCENARIOS = {
       const m = await page.locator('.note[aria-live]').first().innerText();
       if (/OL/.test(m)) broken = w;
     }
-    expect(!!broken, `beeper found the open wire: ${broken}`);
-    const names = { w1: 'red wire', w2: 'yellow link wire', w3: 'black wire' };
-    await click(page, `Replace ${names[broken ?? 'w1']}`);
+    expect(!!broken, `beeper found the open jumper: ${broken}`);
+    const names = { w1: 'red jumper', w2: 'yellow link', w3: 'black jumper' };
+    await click(page, `Replace the ${names[broken ?? 'w1']}`);
     await page.waitForTimeout(200);
     const fb = await checkTask(page, 3);
-    expect(fb.startsWith('Done'), `replaced the proven wire → done (${fb.slice(0, 50)})`);
+    expect(fb.startsWith('Done'), `replaced the proven jumper → done (${fb.slice(0, 50)})`);
   },
-  async '2.3'(page) {
-    await click(page, 'Take bulb 1 out');
+  async '2.4'(page) {
+    let l1 = await page.locator('.readout:has-text("LED 1") .v').innerText();
+    expect(l1 === 'dark', `series on 3.3 V: LED 1 is ${l1} (needs 4.0 V)`);
+    await click(page, '5 V (VIN)');
+    l1 = await page.locator('.readout:has-text("LED 1") .v').innerText();
+    expect(/lit/.test(l1), `series on 5 V: LED 1 ${l1}`);
+    await click(page, 'Pull LED 1 out');
     let fb = await checkTask(page, 3);
-    expect(fb.startsWith('Not yet') && /dark/.test(fb), 'series with one bulb out → other bulb dark');
+    expect(fb.startsWith('Not yet') && /dark/.test(fb), 'series with one LED out → the other is dark');
+    await click(page, '3.3 V (3V3 rail)');
     await click(page, 'Parallel (side by side)');
     fb = await checkTask(page, 3);
-    const total = await page.locator('.readout:has-text("Total resistance") .v').innerText();
-    expect(fb.startsWith('Done'), `parallel with one out → done (total ${total})`);
-    await click(page, 'Put bulb 1 back');
-    await page.selectOption('select:near(:text("Bulb 1 resistance"))', '1000').catch(() => {});
+    const i = await page.locator('.readout:has-text("Supply current") .v').innerText();
+    expect(fb.startsWith('Done'), `parallel with one out → done (supply ${i})`);
+    await click(page, 'Put LED 1 back');
+    const both = await page.locator('.readout:has-text("Supply current") .v').innerText();
+    expect(/11\.8 mA/.test(both), `both in parallel: ${both} (5.9 + 5.9 mA)`);
   },
   async '3.1'(page) {
     await setRange(page, 'Input voltage (Vin)', 5);

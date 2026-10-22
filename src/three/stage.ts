@@ -274,7 +274,7 @@ export class Stage {
     this.updateGuides(dt);
     for (const l of this.labels) {
       let vis = l.el.dataset.hidden !== '1';
-      let o: THREE.Object3D | null = l.obj;
+      let o: THREE.Object3D | null = l.obj.parent; // not l.obj itself: its own flag is the output
       while (vis && o) {
         if (!o.visible) vis = false;
         o = o.parent;
