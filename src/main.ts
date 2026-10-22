@@ -205,9 +205,11 @@ async function lessonPage(id: string) {
   const panel = new Panel(panelHost);
   const fx = new Effects(stage.real);
   const fxWater = new Effects(stage.water);
+  const fxCheer = new Effects(stage.scene);
   stage.onUpdate((dt) => {
     fx.update(dt);
     fxWater.update(dt);
+    fxCheer.update(dt);
   });
   let card: HTMLElement | null = null;
   const clearFail = () => {
@@ -231,7 +233,9 @@ async function lessonPage(id: string) {
   const renderParts = () => {
     partsRow.replaceChildren(
       h('span', { class: 'lab' }, 'Parts:'),
-      ...stage.listParts().map((p) => h('button', { type: 'button', onclick: () => stage.showTooltip(p.info) }, p.info.name)),
+      ...stage.listParts().map((p) =>
+        h('button', { type: 'button', onclick: () => { stage.spotlight(p.obj); stage.showTooltip(p.info); } }, p.info.name),
+      ),
     );
   };
   stage.partsChanged = () => queueMicrotask(renderParts);
@@ -249,10 +253,16 @@ async function lessonPage(id: string) {
     handle = mod.default({ stage, panel, fx, fxWater, lesson, fail, clearFail });
     stage.renderFallback();
     stage.startFallbackLoop();
+    stage.intro();
   }
   renderParts();
+  startHere(stage, panelHost);
 
-  renderQuiz(quizHost, lesson, (t) => handle.check(t), (n, total) => {
+  renderQuiz(quizHost, lesson, (t) => {
+    const r = handle.check(t);
+    if (r.ok) fxCheer.confetti(stage.focusTop());
+    return r;
+  }, (n, total) => {
     const ready = n >= total;
     nextBtn.setAttribute('aria-disabled', String(!ready));
     nextBtn.classList.toggle('disabled', !ready);
@@ -273,6 +283,18 @@ async function lessonPage(id: string) {
     handle.dispose?.();
     stage.dispose();
   };
+}
+
+/**
+ * Beginners often miss where to start. Unless the scene points at a 3D part,
+ * the first control pulses gently until the learner touches anything.
+ */
+function startHere(stage: { hasHint: boolean; markInteracted(): void; onFirstInteraction: (() => void) | null }, panelHost: HTMLElement) {
+  const first = panelHost.querySelector<HTMLElement>('.ctl, .btnrow');
+  if (first && !stage.hasHint) first.classList.add('start-here');
+  stage.onFirstInteraction = () => first?.classList.remove('start-here');
+  const done = () => stage.markInteracted();
+  for (const ev of ['input', 'click', 'change'] as const) panelHost.addEventListener(ev, done, { once: true });
 }
 
 function notFound() {

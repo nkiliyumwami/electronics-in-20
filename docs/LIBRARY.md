@@ -98,6 +98,16 @@ A scene returns `{ check(task) → { ok, msg? } }`. The quiz calls `check` with 
 - `stage.onUpdate((dt, t) => …)`: per-frame callback. It also runs on the no-WebGL fallback.
 - No WebGL (or `?nowebgl`): the stage shows a diagram built from the registered parts, and all panel controls keep working.
 - Quality: `HIGH_QUALITY` (desktops and laptops, or forced with `?hq`) turns on soft real-time shadows from the key light, plus a shadow-catching floor fitted to the content. Touch devices (or `?lowq`) keep the cheap blob shadows. Solid meshes cast shadows automatically; set `userData.noShadow` to opt out.
+- **Beginner guidance** (built in, no scene code needed):
+  - Hovering a part with a mouse tints it with a soft amber glow, and tapping a part flashes it, so it is always clear what is interactive.
+  - Tapping a name in the **Parts** list spotlights that part in 3D: a bobbing arrow plus a glow, for about three seconds.
+  - **▶ Tour** (top right) walks through every part in turn, with the arrow on the part and its card along the bottom edge. Tapping the scene or **Stop** ends it.
+  - On load the camera swings in from a wider angle, and labels pop briefly when their state changes (for example, to `good` or `bad`).
+  - Solving a "do it in 3D" question sets off a confetti burst above the scene.
+  - Unless the scene sets a hint, the first panel control pulses (`.start-here`) until the learner touches anything.
+- `stage.hint(obj, text)`: a "start here" arrow with a short label (for example, "Tap to press" or "Drag me onto the circuit") for lessons whose first action happens in 3D. It disappears on the first tap, drag, tooltip action or control input, and it replaces the panel pulse. Used in 1.3, 2.1, 3.3, 3.4, 5.3 and 6.2.
+- `stage.spotlight(obj, seconds)` and `stage.flashGlow(obj, seconds)` can also be called from scenes to draw the eye. Glows are additive overlays that reuse the part's geometry and never change its materials, so scenes keep full control of colours and brightness.
+- `CALM_MOTION` is true with `prefers-reduced-motion` and in automated browsers. It switches off the intro swing, the bobbing, the pulsing and the pops, while keeping the arrows and glows themselves.
 - `?debug` exposes the stage as `window.__stage`. `node scripts/closeup.mjs <route> <camera x,y,z> <target x,y,z> <name>` uses it to take close-up screenshots.
 
 ## Control panel (`core/panel.ts`)
@@ -121,7 +131,7 @@ A scene returns `{ check(task) → { ok, msg? } }`. The quiz calls `check` with 
 
 **Water kit (`three/water.ts`):** `pipe`, `gauge`, `pump` (`setPressure`, `spin`), `narrowing` (`setNarrow`, `setHeat`), `tank` (`setLevel`), `checkValve` (`setOpen`), `tapValve` (a tap with a small hand). `lessons/kit.ts → waterLoop()` builds the standard pump–pipe–narrowing loop.
 
-**Flow particles (`three/particles.ts`):** `new Flow(curve, { spacing, color })`. **Density is fixed and only speed changes**: `flow.speed = currentToSpeed(amps, ref)`. Voltage is shown as pressure (gauges), never as particle count.
+**Flow particles (`three/particles.ts`):** `new Flow(curve, { spacing, color })`. **Density is fixed and only speed changes**: `flow.speed = currentToSpeed(amps, ref)`. Voltage is shown as pressure (gauges), never as particle count. Each charge carries a soft halo (a second instanced mesh sharing the same matrices), so the flow reads at a glance even when the charges are small.
 
 ## Circuit boards (`three/pcb.ts`, `content/nightlight.ts`)
 

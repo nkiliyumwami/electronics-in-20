@@ -50,6 +50,31 @@ export const HIGH_QUALITY = (() => {
 })();
 let sharedEnv: THREE.Texture | null = null;
 
+/** Skip decorative motion for people who ask for less of it, and for test runs. */
+export const CALM_MOTION =
+  (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false) || navigator.webdriver === true;
+
+const GLOW_COLOR = '#ffb020';
+
+interface Glow {
+  obj: THREE.Object3D;
+  overlays: THREE.Mesh[];
+  mat: THREE.MeshBasicMaterial;
+  /** Seconds left; Infinity while held (hover, hints). */
+  left: number;
+  peak: number;
+}
+
+interface Pointer {
+  group: THREE.Group;
+  target: THREE.Object3D;
+  /** Arrow tip offset from the target's world position. */
+  offset: THREE.Vector3;
+  left: number;
+  label: Label | null;
+  glow: Glow;
+}
+
 function getRenderer(): THREE.WebGLRenderer | null {
   if (sharedRenderer !== undefined) return sharedRenderer;
   try {
@@ -98,7 +123,11 @@ export class Stage {
   private tapHandlers = new Map<THREE.Object3D, () => void>();
   private draggables: Draggable[] = [];
   private labels: Label[] = [];
-  private camAnim: { t: number; from: THREE.Vector3; to: THREE.Vector3; ft: THREE.Vector3; tt: THREE.Vector3 } | null = null;
+  private camAnim: { t: number; dur: number; from: THREE.Vector3; to: THREE.Vector3; ft: THREE.Vector3; tt: THREE.Vector3 } | null = null;
+  private glows: Glow[] = [];
+  private pointers: Pointer[] = [];
+  private hoverGlow: Glow | null = null;
+  private interacted = false;
   private clock = new THREE.Clock();
   private elapsed = 0;
   private tooltipEl: HTMLElement | null = null;
@@ -176,8 +205,10 @@ export class Stage {
     // Tools: reset camera.
     const tools = h('div', { class: 'stage-tools' });
     tools.append(
+      (this.tourBtn = h('button', { class: 'iconbtn', type: 'button', 'aria-pressed': 'false', title: 'Show me each part, one at a time', onclick: () => this.toggleTour() }, '▶ Tour')),
       h('button', { class: 'iconbtn', type: 'button', 'aria-label': 'Reset camera', title: 'Reset camera', onclick: () => this.resetCamera() }, '⟲ View'),
     );
+    if (this.fallback && this.tourBtn) this.tourBtn.hidden = true; // the tour needs the 3D view
     this.el.append(tools);
 
     // ?debug exposes the stage for scripted close-up screenshots.
@@ -233,13 +264,14 @@ export class Stage {
     if (HIGH_QUALITY && ++this.shadowTick % 30 === 0) this.applyShadows();
     if (this.camAnim && this.controls) {
       const a = this.camAnim;
-      a.t = Math.min(1, a.t + dt / 0.6);
+      a.t = Math.min(1, a.t + dt / a.dur);
       const e = 1 - Math.pow(1 - a.t, 3);
       this.camera.position.lerpVectors(a.from, a.to, e);
       this.controls.target.lerpVectors(a.ft, a.tt, e);
       if (a.t >= 1) this.camAnim = null;
     }
     this.controls?.update();
+    this.updateGuides(dt);
     for (const l of this.labels) {
       let vis = l.el.dataset.hidden !== '1';
       let o: THREE.Object3D | null = l.obj;
@@ -354,9 +386,20 @@ export class Stage {
     this.frame({ animate: true });
   }
 
-  private animateTo(pos: THREE.Vector3, target: THREE.Vector3) {
+  private animateTo(pos: THREE.Vector3, target: THREE.Vector3, dur = 0.6) {
     if (!this.controls) return;
-    this.camAnim = { t: 0, from: this.camera.position.clone(), to: pos.clone(), ft: this.controls.target.clone(), tt: target.clone() };
+    this.camAnim = { t: 0, dur, from: this.camera.position.clone(), to: pos.clone(), ft: this.controls.target.clone(), tt: target.clone() };
+  }
+
+  /** Swing the camera in from a wider angle to the framed view (once, on lesson start). */
+  intro() {
+    if (!this.controls || CALM_MOTION) return;
+    const to = this.camera.position.clone();
+    const tt = this.controls.target.clone();
+    const off = to.clone().sub(tt).applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.55).multiplyScalar(1.45);
+    off.y *= 1.25;
+    this.camera.position.copy(tt).add(off);
+    this.animateTo(to, tt, 1.3);
   }
 
   /** Smoothly point the camera at an object (keeps the current viewing angle). */
@@ -437,7 +480,11 @@ export class Stage {
         if (el.textContent !== t) el.textContent = t;
         if (c !== undefined) {
           const want = `lbl ${c}`;
-          if (el.className !== want) el.className = want;
+          if (el.className !== want) {
+            el.className = want;
+            // A quick pop draws the eye to a label that just changed state.
+            if (c && !CALM_MOTION) el.animate?.([{ scale: '1' }, { scale: '1.22' }, { scale: '1' }], { duration: 380, easing: 'ease-out' });
+          }
         }
       },
       show: (v) => {
@@ -484,7 +531,7 @@ export class Stage {
     if (!this.pickables.includes(obj)) this.pickables.push(obj);
   }
 
-  showTooltip(info: PartInfo, at?: { x: number; y: number }) {
+  showTooltip(info: PartInfo, at?: { x: number; y: number }, takeFocus = true) {
     this.hideTooltip();
     const actions = info.actions?.() ?? [];
     const close = h('button', { class: 'tt-close', type: 'button', 'aria-label': 'Close' }, '×');
@@ -499,12 +546,15 @@ export class Stage {
             'div',
             { class: 'btnrow', style: { marginTop: '8px' } },
             actions.map((a) =>
-              h('button', { class: 'btn small', type: 'button', onclick: () => { a.run(); this.hideTooltip(); } }, a.label),
+              h('button', { class: 'btn small', type: 'button', onclick: () => { this.markInteracted(); a.run(); this.hideTooltip(); } }, a.label),
             ),
           )
         : null,
     );
-    close.addEventListener('click', () => this.hideTooltip());
+    close.addEventListener('click', () => {
+      this.stopTour();
+      this.hideTooltip();
+    });
     tip.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.hideTooltip();
     });
@@ -520,7 +570,44 @@ export class Stage {
     tip.style.left = `${x}px`;
     tip.style.top = `${y}px`;
     this.tooltipEl = tip;
-    (actions.length ? tip.querySelector<HTMLElement>('.btnrow button') : close)?.focus({ preventScroll: true });
+    if (takeFocus) (actions.length ? tip.querySelector<HTMLElement>('.btnrow button') : close)?.focus({ preventScroll: true });
+  }
+
+  // ------------------------------------------------------------ part tour
+  private tourBtn: HTMLElement | null = null;
+  private tour: { i: number; next: number; parts: { obj: THREE.Object3D; info: PartInfo }[] } | null = null;
+  private static readonly TOUR_STEP = 3.2;
+
+  /** Walk through every part: arrow, glow and its tooltip, a few seconds each. */
+  toggleTour() {
+    if (this.tour) return this.stopTour();
+    const parts = this.listParts();
+    if (!parts.length) return;
+    this.tour = { i: -1, next: 0, parts };
+    this.tourBtn?.setAttribute('aria-pressed', 'true');
+    if (this.tourBtn) this.tourBtn.textContent = '■ Stop';
+    this.markInteracted();
+    this.tourStep();
+  }
+
+  stopTour() {
+    if (!this.tour) return;
+    this.tour = null;
+    this.tourBtn?.setAttribute('aria-pressed', 'false');
+    if (this.tourBtn) this.tourBtn.textContent = '▶ Tour';
+    this.hideTooltip();
+  }
+
+  private tourStep() {
+    const tr = this.tour;
+    if (!tr) return;
+    tr.i++;
+    if (tr.i >= tr.parts.length) return this.stopTour();
+    tr.next = this.elapsed + Stage.TOUR_STEP;
+    const { obj, info } = tr.parts[tr.i];
+    this.spotlight(obj, Stage.TOUR_STEP);
+    // Card along the bottom edge, so the arrow and the part stay in view.
+    this.showTooltip({ ...info, name: `${tr.i + 1}/${tr.parts.length} · ${info.name}`, actions: undefined }, undefined, false);
   }
 
   hideTooltip() {
@@ -569,12 +656,14 @@ export class Stage {
     let down: { x: number; y: number; id: number } | null = null;
     let drag: Draggable | null = null;
     canvas.addEventListener('pointerdown', (e) => {
+      this.stopTour();
       down = { x: e.clientX, y: e.clientY, id: e.pointerId };
       const hits = this.hitList(this.draggables.map((d) => d.obj), e, canvas);
       if (hits.length) {
         const own = this.owner(hits[0].object, (o) => this.draggables.some((d) => d.obj === o));
         drag = this.draggables.find((d) => d.obj === own) ?? null;
         if (drag) {
+          this.markInteracted();
           if (this.controls) this.controls.enabled = false;
           canvas.setPointerCapture(e.pointerId);
           drag.onStart?.();
@@ -587,6 +676,10 @@ export class Stage {
         if (e.pointerType === 'mouse') {
           const hits = this.hitList([...this.pickables, ...this.draggables.map((d) => d.obj)], e, canvas);
           canvas.style.cursor = hits.length ? 'pointer' : '';
+          const own = hits.length
+            ? this.owner(hits[0].object, (o) => this.tapHandlers.has(o) || this.draggables.some((d) => d.obj === o) || !!o.userData.part)
+            : null;
+          this.setHover(own);
         }
         return;
       }
@@ -616,21 +709,193 @@ export class Stage {
       }
       const tapOwner = this.owner(hits[0].object, (o) => this.tapHandlers.has(o));
       if (tapOwner) {
+        this.markInteracted();
+        this.flashGlow(tapOwner, 0.6);
         this.tapHandlers.get(tapOwner)!();
         return;
       }
       const partOwner = this.owner(hits[0].object, (o) => !!o.userData.part);
       if (partOwner) {
+        this.markInteracted();
+        this.flashGlow(partOwner, 1.0);
         const r = canvas.getBoundingClientRect();
         this.showTooltip(partOwner.userData.part, { x: e.clientX - r.left, y: e.clientY - r.top });
       }
     };
     canvas.addEventListener('pointerup', up);
+    canvas.addEventListener('pointerleave', () => this.setHover(null));
     canvas.addEventListener('pointercancel', () => {
       drag = null;
       down = null;
       if (this.controls) this.controls.enabled = true;
     });
+  }
+
+  // ------------------------------------------------------ guides & glow
+  /**
+   * Tint every mesh of `obj` with a soft pulsing glow. Overlays reuse the
+   * part's geometry and never touch its materials, so scenes stay in charge
+   * of colour and brightness.
+   */
+  private makeGlow(obj: THREE.Object3D, left: number, peak: number): Glow {
+    const mat = new THREE.MeshBasicMaterial({
+      color: GLOW_COLOR,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+    });
+    const hosts: THREE.Mesh[] = [];
+    obj.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || (o as THREE.InstancedMesh).isInstancedMesh || o.userData.glow || o.userData.blobShadow) return;
+      const mm = m.material as THREE.Material;
+      if (!Array.isArray(mm) && mm.visible === false) return; // invisible grab volumes
+      hosts.push(m);
+    });
+    const overlays = hosts.map((m) => {
+      const g = new THREE.Mesh(m.geometry, mat);
+      g.userData.glow = g.userData.noFrame = g.userData.noShadow = true;
+      g.raycast = () => {};
+      g.renderOrder = 4;
+      m.add(g);
+      return g;
+    });
+    const glow: Glow = { obj, overlays, mat, left, peak };
+    this.glows.push(glow);
+    return glow;
+  }
+
+  private dropGlow(g: Glow) {
+    for (const o of g.overlays) o.removeFromParent();
+    g.mat.dispose();
+    this.glows = this.glows.filter((x) => x !== g);
+  }
+
+  /** A short glow that confirms which part was tapped. */
+  flashGlow(obj: THREE.Object3D, seconds = 1) {
+    if (CALM_MOTION) return;
+    for (const g of [...this.glows]) if (g.obj === obj && g.left !== Infinity) this.dropGlow(g);
+    this.makeGlow(obj, seconds, 0.55);
+  }
+
+  private setHover(obj: THREE.Object3D | null) {
+    if (this.hoverGlow?.obj === obj) return;
+    if (this.hoverGlow) this.dropGlow(this.hoverGlow);
+    this.hoverGlow = obj ? this.makeGlow(obj, Infinity, 0.28) : null;
+  }
+
+  /** A bobbing arrow (with optional text) above an object, plus a glow on it. */
+  private addPointer(target: THREE.Object3D, text: string, left: number): Pointer {
+    this.root.updateMatrixWorld(true);
+    const box = contentBox(target);
+    const wp = target.getWorldPosition(new THREE.Vector3());
+    const top = box.isEmpty() ? wp.clone() : new THREE.Vector3((box.min.x + box.max.x) / 2, box.max.y, (box.min.z + box.max.z) / 2);
+    const group = new THREE.Group();
+    group.userData.noFrame = true;
+    const mat = new THREE.MeshBasicMaterial({ color: GLOW_COLOR, depthTest: false, transparent: true });
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.36, 20), mat);
+    cone.rotation.x = Math.PI; // points down
+    cone.position.y = 0.18;
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.34, 12), mat);
+    stem.position.y = 0.52;
+    for (const m of [cone, stem]) {
+      m.renderOrder = 20;
+      m.raycast = () => {};
+      m.userData.noShadow = true;
+    }
+    group.add(cone, stem);
+    this.scene.add(group);
+    const p: Pointer = { group, target, offset: top.sub(wp).add(new THREE.Vector3(0, 0.12, 0)), left, label: null, glow: this.makeGlow(target, left, 0.45) };
+    if (text) p.label = this.label(text, group, new THREE.Vector3(0, 0.95, 0), 'hint');
+    this.pointers.push(p);
+    this.placePointer(p, 0);
+    return p;
+  }
+
+  private dropPointer(p: Pointer) {
+    p.group.removeFromParent();
+    p.group.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+    ((p.group.children[0] as THREE.Mesh).material as THREE.Material).dispose();
+    if (p.label) {
+      p.label.obj.removeFromParent(); // fires 'removed', which takes the HTML element out
+      this.labels = this.labels.filter((l) => l !== p.label);
+    }
+    this.dropGlow(p.glow);
+    this.pointers = this.pointers.filter((x) => x !== p);
+  }
+
+  private placePointer(p: Pointer, t: number) {
+    p.group.position.copy(p.target.getWorldPosition(new THREE.Vector3())).add(p.offset);
+    p.group.position.y += CALM_MOTION ? 0.1 : 0.1 + Math.abs(Math.sin(t * 3.2)) * 0.22;
+    // Constant on-screen size, whatever the zoom.
+    p.group.scale.setScalar(Math.max(0.4, this.camera.position.distanceTo(p.group.position) * 0.095));
+    let vis = true;
+    for (let o: THREE.Object3D | null = p.target; o; o = o.parent) if (!o.visible) vis = false;
+    p.group.visible = vis;
+  }
+
+  /**
+   * "Start here": point at the object the learner should touch first. It stays
+   * until they tap, drag or use a control. Returns a function that removes it.
+   */
+  hint(obj: THREE.Object3D, text: string): () => void {
+    if (!this.renderer || this.interacted) return () => {};
+    const p = this.addPointer(obj, text, Infinity);
+    this.hasHint = true;
+    return () => {
+      if (this.pointers.includes(p)) this.dropPointer(p);
+    };
+  }
+  hasHint = false;
+
+  /** Show where a part is: glow plus arrow for a few seconds. */
+  spotlight(obj: THREE.Object3D, seconds = 2.8) {
+    if (!this.renderer) return;
+    for (const p of [...this.pointers]) if (p.left !== Infinity) this.dropPointer(p);
+    this.addPointer(obj, '', seconds);
+  }
+
+  /** The learner did something: retire every "start here" hint. */
+  markInteracted() {
+    if (this.interacted) return;
+    this.interacted = true;
+    for (const p of [...this.pointers]) if (p.left === Infinity) this.dropPointer(p);
+    this.onFirstInteraction?.();
+  }
+  onFirstInteraction: (() => void) | null = null;
+
+  private updateGuides(dt: number) {
+    const t = this.elapsed;
+    if (this.tour && t >= this.tour.next) this.tourStep();
+    for (const p of [...this.pointers]) {
+      p.left -= dt;
+      if (p.left <= 0) this.dropPointer(p);
+      else this.placePointer(p, t);
+    }
+    for (const g of [...this.glows]) {
+      g.left -= dt;
+      if (g.left <= 0) {
+        this.dropGlow(g);
+        continue;
+      }
+      const pulse = CALM_MOTION ? 1 : 0.6 + 0.4 * Math.sin(t * 6);
+      const fade = g.left === Infinity ? 1 : Math.min(1, g.left / 0.4);
+      g.mat.opacity = g.peak * pulse * fade;
+    }
+  }
+
+  /** Top centre of what the camera frames, in world space (for celebrations). */
+  focusTop(): THREE.Vector3 {
+    this.root.updateMatrixWorld(true);
+    const box = new THREE.Box3();
+    if (this.real.visible) for (const o of this.focusObjects ?? [this.real]) box.union(contentBox(o));
+    if (box.isEmpty()) box.union(contentBox(this.root));
+    if (box.isEmpty()) return new THREE.Vector3();
+    return new THREE.Vector3((box.min.x + box.max.x) / 2, box.max.y + 0.3, (box.min.z + box.max.z) / 2);
   }
 
   /** Project a world point to stage pixel coordinates. */

@@ -27,6 +27,8 @@ export class Effects {
   private flashes: { s: THREE.Sprite; life: number; max: number; size: number }[] = [];
   private sparkGeo = new THREE.SphereGeometry(0.025, 6, 4);
   private sparkMat = new THREE.MeshBasicMaterial({ color: '#ffd36b' });
+  private confettiList: { m: THREE.Mesh; v: THREE.Vector3; spin: THREE.Vector3; life: number }[] = [];
+  private confettiGeo = new THREE.PlaneGeometry(0.09, 0.05);
   private reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
   constructor(parent: THREE.Object3D) {
@@ -61,11 +63,29 @@ export class Effects {
     this.flashes.push({ s, life: 0.45, max: 0.45, size });
   }
 
+  /** A happy burst of paper confetti (used when a 3D task is solved). */
+  confetti(pos: THREE.Vector3, count = 70) {
+    const colors = ['#2f9e44', '#ffb020', '#3d7bd9', '#e8590c', '#f5f4ef', '#d6336c'];
+    const n = this.reduced ? 0 : count;
+    for (let i = 0; i < n; i++) {
+      const m = new THREE.Mesh(this.confettiGeo, new THREE.MeshBasicMaterial({ color: colors[i % colors.length], side: THREE.DoubleSide, transparent: true }));
+      m.position.copy(pos);
+      m.rotation.set(Math.random() * 6, Math.random() * 6, Math.random() * 6);
+      const a = Math.random() * Math.PI * 2;
+      const v = new THREE.Vector3(Math.cos(a) * (0.6 + Math.random() * 1.6), 2.2 + Math.random() * 2.2, Math.sin(a) * (0.6 + Math.random() * 1.6));
+      this.group.add(m);
+      this.confettiList.push({ m, v, spin: new THREE.Vector3(Math.random() * 9, Math.random() * 9, 0), life: 1.6 + Math.random() * 0.8 });
+    }
+    this.flash(pos, '#b6f0c8', 3);
+  }
+
   clear() {
     this.emitters = [];
     for (const p of this.puffs) this.group.remove(p.s);
     for (const s of this.sparkList) this.group.remove(s.m);
     for (const f of this.flashes) this.group.remove(f.s);
+    for (const c of this.confettiList) this.group.remove(c.m);
+    this.confettiList = [];
     this.puffs = [];
     this.sparkList = [];
     this.flashes = [];
@@ -106,6 +126,21 @@ export class Effects {
       s.m.position.addScaledVector(s.v, dt);
       if (s.life <= 0) {
         this.group.remove(s.m);
+        return false;
+      }
+      return true;
+    });
+    this.confettiList = this.confettiList.filter((c) => {
+      c.life -= dt;
+      c.v.y -= 4.5 * dt;
+      c.v.multiplyScalar(1 - 1.6 * dt); // paper flutters: strong air drag
+      c.m.position.addScaledVector(c.v, dt);
+      c.m.rotation.x += c.spin.x * dt;
+      c.m.rotation.y += c.spin.y * dt;
+      (c.m.material as THREE.MeshBasicMaterial).opacity = Math.min(1, c.life / 0.5);
+      if (c.life <= 0) {
+        this.group.remove(c.m);
+        (c.m.material as THREE.Material).dispose();
         return false;
       }
       return true;

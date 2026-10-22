@@ -190,6 +190,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   solve();
   stage.focusObjects = [b.batGroup, res.group, ledHolder];
   stage.enableWater(2.2);
+  stage.hint(ledHolder, 'Tap the LED');
   stage.frame({ dir: new THREE.Vector3(0.12, 1.35, 1), animate: false });
 
   return {

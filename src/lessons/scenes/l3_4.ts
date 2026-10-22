@@ -276,6 +276,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   wcv.group.visible = false;
   stage.focusObjects = [b.batGroup, q.group, mcu, loadGroup];
   stage.enableWater(2.2);
+  stage.hint(mcu, 'Tap the board');
   stage.frame({ dir: new THREE.Vector3(0.1, 1.3, 1), animate: false });
 
   return {

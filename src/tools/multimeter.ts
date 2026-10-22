@@ -101,6 +101,11 @@ export class Multimeter {
   private canvas = document.createElement('canvas');
   private tex: THREE.CanvasTexture;
   private dial = new THREE.Group();
+  /** A probe's draggable group (for "start here" hints). */
+  probe(which: 'red' | 'black'): THREE.Object3D {
+    return this.probes.find((p) => p.which === which)!.g;
+  }
+
   private probes: { which: 'red' | 'black'; g: THREE.Group; cable: THREE.Mesh; park: THREE.Vector3; jack: THREE.Vector3 }[] = [];
   private markers = new Map<string, THREE.Mesh>();
   private selRed: HTMLSelectElement | null = null;

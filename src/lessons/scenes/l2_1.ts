@@ -209,6 +209,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   evaluate();
   stage.focusObjects = [A, B];
   stage.enableWater(2.5);
+  stage.hint(btn.group, 'Tap to press');
   stage.frame({ dir: new THREE.Vector3(0, 1.4, 1), animate: false });
 
   return {

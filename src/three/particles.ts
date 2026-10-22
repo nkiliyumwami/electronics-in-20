@@ -6,6 +6,8 @@ import * as THREE from 'three';
  */
 export class Flow {
   readonly mesh: THREE.InstancedMesh;
+  /** Soft halo around each charge so the flow reads at a glance, even small. */
+  private halo: THREE.InstancedMesh;
   private lut: THREE.Vector3[] = [];
   private length = 1;
   private offset = 0;
@@ -25,6 +27,14 @@ export class Flow {
     this.mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(opts.radius ?? 0.045, 10, 8), m, this.max);
     this.mesh.frustumCulled = false;
     this.mesh.userData.noFrame = true;
+    const r = opts.radius ?? 0.045;
+    const hm = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.3, depthWrite: false });
+    this.halo = new THREE.InstancedMesh(new THREE.SphereGeometry(r * 2.3, 8, 6), hm, this.max);
+    this.halo.instanceMatrix = this.mesh.instanceMatrix; // same positions, drawn larger
+    this.halo.frustumCulled = false;
+    this.halo.raycast = () => {};
+    this.halo.userData.noFrame = true;
+    this.mesh.add(this.halo);
     this.setPath(path);
   }
 
@@ -32,7 +42,7 @@ export class Flow {
     this.length = Math.max(0.01, path.getLength());
     const n = Math.max(32, Math.min(2048, Math.round(this.length * 40)));
     this.lut = path.getSpacedPoints(n);
-    this.mesh.count = Math.min(this.max, Math.floor(this.length / this.spacing));
+    this.mesh.count = this.halo.count = Math.min(this.max, Math.floor(this.length / this.spacing));
     this.place();
   }
 
@@ -40,6 +50,7 @@ export class Flow {
     const m = this.mesh.material as THREE.MeshStandardMaterial;
     m.color.set(c);
     m.emissive.set(c);
+    (this.halo.material as THREE.MeshBasicMaterial).color.set(c);
   }
 
   update(dt: number) {

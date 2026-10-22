@@ -185,6 +185,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   solve();
   stage.focusObjects = [b.batGroup, res.group, ledObj.group, meter.group];
   stage.enableWater(2.2);
+  stage.hint(meter.probe('red'), 'Drag me onto the circuit');
   stage.frame({ dir: new THREE.Vector3(0.12, 1.35, 1), animate: false });
 
   return {

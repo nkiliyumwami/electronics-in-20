@@ -160,6 +160,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   // Keep the same chip mesh material from being shared with other packages.
   chip.body.material = (chip.body.material as THREE.Material).clone();
   stage.enableWater(1.5);
+  stage.hint(capGroup, 'Then drag me');
   stage.frame({ dir: new THREE.Vector3(0, 2.4, 1), animate: false });
 
   return {

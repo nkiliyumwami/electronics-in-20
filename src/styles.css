@@ -199,6 +199,14 @@ a.btn.primary { color: var(--brand-ink); }
 .lbl.good { background: var(--good-soft); color: var(--good); border-color: var(--good); }
 .lbl.water { color: var(--water); }
 .lbl.hidden { display: none; }
+/* "Start here" text under the bobbing 3D arrow. */
+.lbl.hint { background: #ffb020; color: #2a1d00; border-color: #c98400; font-size: 13px; padding: 3px 9px; }
+/* The first control pulses until the learner touches anything. */
+.start-here { border-radius: 10px; animation: start-here 1.6s ease-in-out infinite; }
+@keyframes start-here {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, #ffb020 0%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, #ffb020 55%, transparent); }
+}
 .stage-tools { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 3; flex-wrap: wrap; justify-content: flex-end; }
 .stage-tools .iconbtn { height: 36px; min-width: 36px; font-size: 0.85rem; }
 .viewseg { position: absolute; top: 8px; left: 8px; z-index: 3; display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -325,4 +333,5 @@ select { border: 1px solid var(--line); background: var(--surface); border-radiu
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
+  .start-here { animation: none; box-shadow: 0 0 0 3px #ffb020; }
 }

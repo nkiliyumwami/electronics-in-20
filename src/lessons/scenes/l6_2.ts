@@ -193,6 +193,7 @@ export default function scene(ctx: SceneCtx): SceneHandle {
   }
 
   roP.set('0 / 4');
+  stage.hint(holders.R, 'Tap a part');
   stage.frame({ dir: new THREE.Vector3(0, 1.9, 1), animate: false });
 
   return {
